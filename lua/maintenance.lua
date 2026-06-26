@@ -4,7 +4,7 @@ local E = require("entry")
 local unicode = require("unicode")
 
 --#############################################################################
--- SUBSCRIPT FOR ENTRY "DATABASE" MAITENANCE
+-- SCRIPT FOR CLI-BASED ENTRY-DATABASE MAITENANCE
 --#############################################################################
 
 --#############################################################################

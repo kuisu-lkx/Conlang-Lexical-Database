@@ -97,7 +97,7 @@ S.lkx_alphabet =
 }
 
 
---- ipazeug
+-- for ipa.lua
 --[[
 S.short_to_long = {
     ['a'] = 'ā',
