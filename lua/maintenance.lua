@@ -40,12 +40,17 @@ local entry
 
 local headword_string = ""
     if entry.headword ~= "" then
-        headword_string = entry.headword .. ":"
+        headword_string = entry.headword .. ""
     end
 
 local headindex_string = ""
     if entry.headindex ~= 0 then
-        headindex_string = "[" .. tostring(entry.headindex) .. "]"
+        headindex_string = "(" .. tostring(entry.headindex) .. ")"
+    end
+
+local ipa_head_string = ""
+    if entry.ipa_head ~= "" then
+        ipa_head_string = " [" .. entry.ipa_head .. "]"
     end
 
 local contractedstem_string = ""
@@ -83,6 +88,8 @@ local _string = ""
 print(
     headword_string
     .. headindex_string
+    .. ipa_head_string
+    .. ":"
     .. contractedstem_string
     .. expandedstem_string
     .. ipa_cstem_string

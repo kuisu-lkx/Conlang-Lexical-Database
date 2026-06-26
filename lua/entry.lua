@@ -216,6 +216,7 @@ function E.entry(tbl)
         stemclass      = tbl.stemclass      or "",
         ipa_cstem      = "",
         ipa_estem      = "",
+        ipa_head       = "",
         intermedstem   = tbl.intermedstem   or "",
         comment        = tbl.comment        or "",
         classes        = classes
@@ -243,7 +244,8 @@ function E.make_headword(entry)
         return
             entry.prefix ..
             entry.contractedstem ..
-            entry.postfix
+            entry.postfix,
+            entry.ipa_cstem
     end
 
     local compound_entry =
@@ -260,21 +262,32 @@ function E.make_headword(entry)
     end
 
     local compound_string
+    local compound_ipa
+    local headword_string
+    local headword_ipa
 
     if compound_entry.expandedstem == "" then
-        compound_string =
-            compound_entry.contractedstem
+        compound_string = compound_entry.contractedstem
+        compound_ipa = compound_entry.ipa_cstem
     else
-        compound_string =
-            compound_entry.expandedstem
+        compound_string = compound_entry.expandedstem
+        compound_ipa = compound_entry.ipa_estem
     end
 
-    return
-        compound_string ..
-        U.insertH(compound_string, entry.contractedstem) ..
-        entry.prefix ..
-        entry.contractedstem ..
-        entry.postfix
+    for primary, secondary in pairs(S.vowel_explicit_secondary) do
+        compound_string = compound_string:gsub(primary, secondary)
+    end
+
+    compound_ipa = compound_ipa:gsub("ˈ", "ˌ") .. entry.ipa_cstem
+
+    headword_string =
+        compound_string
+        .. U.insertH(compound_string, entry.contractedstem)
+        .. entry.prefix
+        .. entry.contractedstem
+        .. entry.postfix
+
+    return headword_string, compound_ipa
 
 end
 
@@ -456,25 +469,29 @@ function E.normalize_entries()
 
     end
 
-    for _, entry in ipairs(S.entries) do
 
-        entry.headword = E.make_headword(entry)
-
-    end
 
     for _, entry in ipairs(S.entries) do
 
         entry.ipa_cstem =
         IPA.make_ipa(
             entry.contractedstem,
-            entry.stemclass
+            entry.stemclass,
+            "ultimate"
         )
 
         entry.ipa_estem =
         IPA.make_ipa(
             entry.expandedstem,
-            entry.stemclass
+            entry.stemclass,
+            "penultimate"
         )
+
+    end
+
+    for _, entry in ipairs(S.entries) do
+
+        entry.headword, entry.ipa_head = E.make_headword(entry)
 
     end
 

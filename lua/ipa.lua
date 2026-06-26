@@ -56,6 +56,26 @@ function IPA.tokenize(stem)
 end
 
 --#############################################################################
+-- FIND EXPLICIT STRESS
+--
+-- Returns the nucleus index carrying an explicit stress mark.
+--#############################################################################
+
+function IPA.find_explicit_stress(tokens)
+
+    for i, token in ipairs(tokens) do
+
+        if S.vowels_explicit_stress[token] then
+            return i
+        end
+
+    end
+
+    return nil
+
+end
+
+--#############################################################################
 -- FIND STRESS ONSET
 --#############################################################################
 
@@ -101,7 +121,7 @@ end
 --
 --#############################################################################
 
-function IPA.find_stress(tokens, stemclass)
+function IPA.find_stress(tokens, stemclass, stress_rule)
 
     ---------------------------------------------------------------------------
     -- Classes without stress
@@ -148,13 +168,22 @@ function IPA.find_stress(tokens, stemclass)
 
     local nucleus
 
-    if #nuclei == 1 then
+    local explicit = IPA.find_explicit_stress(tokens)
 
-        nucleus = nuclei[1]
+    if explicit then
+        nucleus = explicit
 
-    else
+    elseif stress_rule == "ultimate" then
 
-        nucleus = nuclei[#nuclei - 1]
+        nucleus = nuclei[#nuclei]
+
+    elseif stress_rule == "penultimate" then
+
+        if #nuclei == 1 then
+            nucleus = nuclei[1]
+        else
+            nucleus = nuclei[#nuclei - 1]
+        end
 
     end
 
@@ -530,6 +559,16 @@ function IPA.render(tokens, stress)
         local token = tokens[i]
 
         ------------------------------------------------------------
+        -- Ignore stress diacritics for ipa look-up
+        ------------------------------------------------------------
+
+        local render_token = token
+
+        if S.vowel_explicit_base[token] then
+            render_token = S.vowel_explicit_base[token]
+        end
+
+        ------------------------------------------------------------
         -- Stress mark
         ------------------------------------------------------------
 
@@ -540,6 +579,8 @@ function IPA.render(tokens, stress)
             table.insert(ipa, "ˈ")
 
         end
+
+
 
         ------------------------------------------------------------
         -- Lenition
@@ -619,7 +660,7 @@ function IPA.render(tokens, stress)
             -- Vowels
             ------------------------------------------------------------
 
-            elseif S.vowel_ipa_stressed[token] then
+            elseif S.vowel_ipa_stressed[render_token] then
 
                 if stress
                 and i == stress.nucleus
@@ -627,14 +668,14 @@ function IPA.render(tokens, stress)
 
                     table.insert(
                         ipa,
-                        S.vowel_ipa_stressed[token]
+                        S.vowel_ipa_stressed[render_token]
                     )
 
                 else
 
                     table.insert(
                         ipa,
-                        S.vowel_ipa_unstressed[token]
+                        S.vowel_ipa_unstressed[render_token]
                     )
 
                 end
@@ -675,7 +716,7 @@ end
 -- MAKE IPA
 --#############################################################################
 
-function IPA.make_ipa(stem, stemclass)
+function IPA.make_ipa(stem, stemclass, stress_rule)
 
     local tokens =
         IPA.tokenize(stem)
@@ -683,7 +724,8 @@ function IPA.make_ipa(stem, stemclass)
     local stress =
         IPA.find_stress(
             tokens,
-            stemclass
+            stemclass,
+            stress_rule
         )
 
     return IPA.render(

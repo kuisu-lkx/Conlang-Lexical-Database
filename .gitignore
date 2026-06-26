@@ -7,6 +7,6 @@
 # Except:
 !/lua/**
 !/input-example/**
-!README.md
-!.gitignore
-!.gitattributes
+!/README.md
+!/.gitignore
+!/.gitattributes
