@@ -1,0 +1,11 @@
+Ignore all directories
+- /*
+
+Except:
++ /lua/**
+
+Ignore all files:
+- *.*
+
+Except:
++ readme.md
