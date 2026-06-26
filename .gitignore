@@ -1,9 +1,12 @@
-# Ignore everything:
+# Ignore everything
 *
-/*
+
+# But keep directories searchable
+!*/
+
 # Except:
 !/lua/**
 !/input-example/**
-!readme.md
+!README.md
 !.gitignore
 !.gitattributes
