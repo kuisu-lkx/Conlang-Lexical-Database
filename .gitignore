@@ -1,12 +1,8 @@
-Ignore all directories
-/*
-
-Except:
-!/lua/**
-
-Ignore all files:
+Ignore everything:
 *
 
 Except:
+!/lua/**
 !readme.md
-
+!.gitignore
+!.gitattributes
