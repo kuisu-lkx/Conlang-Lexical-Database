@@ -371,12 +371,8 @@ function E.make_expandedstem(entry)
 
             local long_first = first
 
-            for i, short in ipairs(S.vowels_short) do
-
-                if short == first then
-                    long_first = S.vowels_long[i]
-                    break
-                end
+            if S.short_to_long[first] then
+                long_first = S.short_to_long[first]
             end
 
             local stem =
@@ -396,9 +392,9 @@ function E.make_expandedstem(entry)
     -- Long vowel + 1-2 consonants
     ---------------------------------------------------------------------------
 
-    for i, long in ipairs(S.vowels_long) do
+    for _, long in ipairs(S.vowels_long) do
 
-        local short = S.vowels_short[i]
+        local short = S.long_to_short[long]
 
         local consonants =
             contractedstem:match(
