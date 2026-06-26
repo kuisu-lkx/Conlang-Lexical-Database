@@ -1,11 +1,12 @@
 Ignore all directories
-- /*
+/*
 
 Except:
-+ /lua/**
+!/lua/**
 
 Ignore all files:
-- *.*
+*
 
 Except:
-+ readme.md
+!readme.md
+
