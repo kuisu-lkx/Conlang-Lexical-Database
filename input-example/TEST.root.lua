@@ -1,6 +1,8 @@
 -- ############################################################################
 -- EXAMPLE INPUT FILE
--- All lexemes are stored in files named lexeme.root.lua or particle-group.part.lua
+--
+-- All lexemes are stored in files named lexeme.root.lua or
+-- particle-group.part.lua
 --
 -- The directory structure is as follows:
 --
@@ -8,11 +10,15 @@
 --      /entries/
 --          /A/
 --              aa.root.lua
+--              ...
 --          ...
 --          /Z/
+--              za.root.lua
+--              ...
 --          posessives.part.lua
 --      /lua/
---          codefiles.lua
+--          codefile.lua
+--          ...
 --      database-interface.lua (to be completed)
 --
 -- ############################################################################
