@@ -34,6 +34,7 @@ The codebase changes frequently as both the software and the conlang develop tog
     ```
     lua maintenance.lua print_all
     ```
+* for more functions see maintenance.lua "parse command" section, the cli is still some time away
 * see comment in input-example/TEST.root.lua for details on the expected directory structure
 
 The repository mainly serves as a place to develop ideas and to document the project's evolution.
