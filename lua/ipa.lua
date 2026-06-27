@@ -123,6 +123,12 @@ end
 
 function IPA.find_stress(tokens, stemclass, stress_rule)
 
+    if stress_rule == "none" then
+
+        return nil
+
+    end
+
     ---------------------------------------------------------------------------
     -- Classes without stress
     ---------------------------------------------------------------------------

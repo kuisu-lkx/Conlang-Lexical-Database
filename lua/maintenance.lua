@@ -35,12 +35,12 @@ local entry
     if type(arg) == "table" then
         entry = arg
     else
-        entry = U.find_entry("headword", arg)
+        entry = U.find_entry("citation", arg)
     end
 
-local headword_string = ""
-    if entry.headword ~= "" then
-        headword_string = entry.headword .. ""
+local citation_string = ""
+    if entry.citation ~= "" then
+        citation_string = entry.citation .. ""
     end
 
 local headindex_string = ""
@@ -86,7 +86,7 @@ local _string = ""
 ]]
 
 print(
-    headword_string
+    citation_string
     .. headindex_string
     .. ipa_head_string
     .. ":"
@@ -172,7 +172,7 @@ local entry
 if type(arg) == "table" then
     entry = arg
 else
-    entry = U.find_entry("headword", arg)
+    entry = U.find_entry("citation", arg)
 end
 
 print("----------------------------------------")
@@ -196,7 +196,7 @@ end
 --------
 
 -- Returns matching entries and prints their
--- headwords.
+-- citations.
 --#############################################################################
 
 function find_by_key(key, value)
@@ -216,7 +216,7 @@ print(
 for _, entry in ipairs(matches) do
 
     print(
-        entry.headword
+        entry.citation
     )
 
 end

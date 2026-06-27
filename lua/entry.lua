@@ -206,11 +206,11 @@ function E.entry(tbl)
 
     return {
         kind           = "entry",
-        headword       = "",
+        citation       = "",
         headindex      = tbl.headindex      or 0,
         contractedstem = tbl.contractedstem or "",
         expandedstem   = tbl.expandedstem   or "",
-        compoundstem   = tbl.compoundstem   or "",
+        modifier       = tbl.modifier       or "",
         prefix         = tbl.prefix         or "",
         postfix        = tbl.postfix        or "",
         stemclass      = tbl.stemclass      or "",
@@ -235,59 +235,126 @@ group       = E.group
 translation = E.translation
 
 --#############################################################################
--- HEADWORD CONSTRUCTOR
+-- CITATION CONSTRUCTOR
+-- Generates unique citations for every non-compounded entry
 --#############################################################################
 
-function E.make_headword(entry)
+function E.make_citation(entry)
 
-    if entry.compoundstem == "" then
-        return
-            entry.prefix ..
-            entry.contractedstem ..
-            entry.postfix,
-            entry.ipa_cstem
-    end
+    local citation_string
+    local citation_ipa
 
-    local compound_entry =
-        U.find_entry(
-            "contractedstem",
-            entry.compoundstem
-        )
-
-    if not compound_entry then
-        error(
-            "Compound root not found: "
-            .. entry.compoundstem
-        )
-    end
-
-    local compound_string
-    local compound_ipa
-    local headword_string
-    local headword_ipa
-
-    if compound_entry.expandedstem == "" then
-        compound_string = compound_entry.contractedstem
-        compound_ipa = compound_entry.ipa_cstem
-    else
-        compound_string = compound_entry.expandedstem
-        compound_ipa = compound_entry.ipa_estem
-    end
-
-    for primary, secondary in pairs(S.vowel_explicit_secondary) do
-        compound_string = compound_string:gsub(primary, secondary)
-    end
-
-    compound_ipa = compound_ipa:gsub("ˈ", "ˌ") .. entry.ipa_cstem
-
-    headword_string =
-        compound_string
-        .. U.insertH(compound_string, entry.contractedstem)
-        .. entry.prefix
+    citation_string =
+        entry.prefix
         .. entry.contractedstem
         .. entry.postfix
 
-    return headword_string, compound_ipa
+    citation_ipa =
+        IPA.make_ipa(entry.prefix, "prefix", "none")
+        .. entry.ipa_cstem
+        .. IPA.make_ipa(entry.postfix, "postfix", "none")
+
+    return citation_string, citation_ipa
+
+end
+
+--#############################################################################
+-- COMPOUND CONSTRUCTOR
+-- Generates unique citations for every compounded entry
+-- Has to run after make_citation()
+--#############################################################################
+
+function E.make_compound(entry)
+
+    local citation_string
+    local citation_ipa
+    local modifier_string
+    local modifier_ipa
+    local head_string
+    local head_ipa
+
+    -- assemble compounds
+    local modifier_entry =
+        U.find_entry(
+            "citation",
+            entry.modifier
+        )
+
+    if not modifier_entry then
+        error(
+            "Modifier not found in citations: "
+            .. entry.modifier
+        )
+    end
+
+    -- get correct form for composition from modifiers entry
+    if modifier_entry.expandedstem == "" then
+        modifier_string = modifier_entry.contractedstem
+        modifier_ipa = modifier_entry.ipa_cstem
+    else
+        modifier_string = modifier_entry.expandedstem
+        modifier_ipa = modifier_entry.ipa_estem
+    end
+
+    -- if stress is explicitly marked in compoundstem: acute -> grave
+    for primary, secondary in pairs(S.vowel_explicit_secondary) do
+        modifier_string = modifier_string:gsub(primary, secondary)
+    end
+
+    -- swap ipa stress mark of compstem to secondary stress
+    modifier_ipa = modifier_ipa:gsub("ˈ", "ˌ")
+
+    -- add prefix and postfix
+    modifier_ipa =
+        IPA.make_ipa(modifier_entry.prefix, "", "none")
+        .. modifier_ipa
+        .. IPA.make_ipa(modifier_entry.postfix, "", "none")
+
+    modifier_string =
+        modifier_entry.prefix
+        .. modifier_string
+        .. modifier_entry.postfix
+
+    head_string =
+        entry.prefix
+        .. entry.contractedstem
+        .. entry.postfix
+
+    -- Construct head_ipa: add linking element, prefix and suffix and rerender stress if neccessary
+    if entry.prefix == "" then
+        if U.insertH(modifier_string, entry.contractedstem) == "h" then
+            head_ipa =
+                IPA.make_ipa("h" .. entry.contractedstem, entry.stemclass, "ultimate")
+                .. IPA.make_ipa(entry.postfix, "", "none")
+        else
+            head_ipa =
+                entry.ipa_cstem
+                .. IPA.make_ipa(entry.postfix, "", "none")
+        end
+    else
+        if U.insertH(modifier_string, entry.prefix) == "h" then
+            head_ipa =
+                IPA.make_ipa("h" .. entry.prefix, "", "none")
+                .. entry.ipa_cstem
+                .. IPA.make_ipa(entry.postfix, "", "none")
+        else
+            head_ipa =
+                IPA.make_ipa(entry.prefix, "", "none")
+                .. entry.ipa_cstem
+                .. IPA.make_ipa(entry.postfix, "", "none")
+        end
+    end
+
+    citation_ipa =
+        modifier_ipa
+        .. head_ipa
+
+    citation_string =
+        modifier_string
+        .. U.insertH(modifier_string, entry.contractedstem)
+        .. head_string
+
+    return citation_string, citation_ipa
 
 end
 
@@ -308,9 +375,10 @@ function E.make_expandedstem(entry)
 
     local stemclass = entry.stemclass
 
-    -- Verbs do not generate expanded stems
-    if stemclass == "v" then
-        return "", "v"
+    if not (
+        stemclass == "n"
+    ) then
+        return entry.expandedstem, entry.stemclass
     end
 
     ---------------------------------------------------------------------------
@@ -457,15 +525,11 @@ end
 
 function E.normalize_entries()
 
-
-
     for _, entry in ipairs(S.entries) do
 
         entry.expandedstem, entry.stemclass = E.make_expandedstem(entry)
 
     end
-
-
 
     for _, entry in ipairs(S.entries) do
 
@@ -487,10 +551,21 @@ function E.normalize_entries()
 
     for _, entry in ipairs(S.entries) do
 
-        entry.headword, entry.ipa_head = E.make_headword(entry)
+        if entry.modifier == "" then
+
+            entry.citation, entry.ipa_head = E.make_citation(entry)
+
+        end
 
     end
 
+
+    for _, entry in ipairs(S.entries) do
+        if entry.modifier ~= "" then
+            entry.citation, entry.ipa_head = E.make_compound(entry)
+
+        end
+    end
 
 
 end
