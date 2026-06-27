@@ -48,24 +48,24 @@ function U.sort_alphabetical(a, b, alphabet)
 end
 ]]
 --#############################################################################
--- InsertH
+-- Test if two syllables need a linking -h- inbetween them
 --#############################################################################
 
-function U.insertH(part1, part2)
+function U.needs_linking_h(syllable1, syllable2)
 
-    local first = unicode.utf8.sub(part2, 1, 1)
-    local last  = unicode.utf8.sub(part1, -1, -1)
+    local first = unicode.utf8.sub(syllable2, 1, 1)
+    local last  = unicode.utf8.sub(syllable1, -1, -1)
 
     for i = 1, #S.vowels do
         if S.vowels[i] == first then
             for j = 1, #S.vowels do
                 if S.vowels[j] == last then
-                    return "h"
+                    return true
                 end
             end
         end
     end
-    return ""
+    return false
 end
 
 --#############################################################################

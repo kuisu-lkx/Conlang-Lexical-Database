@@ -273,13 +273,18 @@ function E.make_compound(entry)
     local head_string
     local head_ipa
 
-    -- assemble compounds
+    ---------------------------------------------------------------------------
+    -- Construct modifier_string and modifier_ipa
+    ---------------------------------------------------------------------------
+
+    -- look up given modifier citation in entries
     local modifier_entry =
         U.find_entry(
             "citation",
             entry.modifier
         )
 
+    -- error if nothing found
     if not modifier_entry then
         error(
             "Modifier not found in citations: "
@@ -287,7 +292,7 @@ function E.make_compound(entry)
         )
     end
 
-    -- get correct form for composition from modifiers entry
+    -- get correct stem-form for composition from modifiers entry
     if modifier_entry.expandedstem == "" then
         modifier_string = modifier_entry.contractedstem
         modifier_ipa = modifier_entry.ipa_cstem
@@ -296,7 +301,8 @@ function E.make_compound(entry)
         modifier_ipa = modifier_entry.ipa_estem
     end
 
-    -- if stress is explicitly marked in compoundstem: acute -> grave
+    -- if stress is explicitly marked in modifier: swap acute -> grave to
+    -- indicate secondary stress
     for primary, secondary in pairs(S.vowel_explicit_secondary) do
         modifier_string = modifier_string:gsub(primary, secondary)
     end
@@ -310,21 +316,31 @@ function E.make_compound(entry)
         .. modifier_ipa
         .. IPA.make_ipa(modifier_entry.postfix, "", "none")
 
+    -- assemble modifier_string
     modifier_string =
         modifier_entry.prefix
         .. modifier_string
         .. modifier_entry.postfix
 
+    ---------------------------------------------------------------------------
+    -- Construct head_string and head_ipa
+    ---------------------------------------------------------------------------
+
+    -- assemble head_string
     head_string =
         entry.prefix
         .. entry.contractedstem
         .. entry.postfix
 
-    -- Construct head_ipa: add linking element, prefix and suffix and rerender stress if neccessary
+    -- construct head_ipa: add linking element, prefix and suffix and rerender
+    -- stress if neccessary through make_ipa()
     if entry.prefix == "" then
-        if U.insertH(modifier_string, entry.contractedstem) == "h" then
+        if U.needs_linking_h(modifier_string, entry.contractedstem) then
             head_ipa =
-                IPA.make_ipa("h" .. entry.contractedstem, entry.stemclass, "ultimate")
+                IPA.make_ipa(
+                    "h" .. entry.contractedstem,
+                    entry.stemclass,
+                    "ultimate")
                 .. IPA.make_ipa(entry.postfix, "", "none")
         else
             head_ipa =
@@ -332,7 +348,7 @@ function E.make_compound(entry)
                 .. IPA.make_ipa(entry.postfix, "", "none")
         end
     else
-        if U.insertH(modifier_string, entry.prefix) == "h" then
+        if U.needs_linking_h(modifier_string, entry.prefix) then
             head_ipa =
                 IPA.make_ipa("h" .. entry.prefix, "", "none")
                 .. entry.ipa_cstem
@@ -345,14 +361,21 @@ function E.make_compound(entry)
         end
     end
 
+
+    ---------------------------------------------------------------------------
+    -- Construct citation_string and citation_ipa
+    ---------------------------------------------------------------------------
+
     citation_ipa =
         modifier_ipa
         .. head_ipa
 
-    citation_string =
-        modifier_string
-        .. U.insertH(modifier_string, entry.contractedstem)
-        .. head_string
+    -- Insert linking element if neccessary
+    if U.needs_linking_h(modifier_string, entry.contractedstem) then
+        citation_string = modifier_string .. "h" .. head_string
+    else
+        citation_string = modifier_string .. head_string
+    end
 
     return citation_string, citation_ipa
 
