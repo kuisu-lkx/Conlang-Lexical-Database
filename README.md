@@ -30,6 +30,11 @@ The codebase changes frequently as both the software and the conlang develop tog
 * no roadmap
 * no feature request process
 * no guarantee of backwards compatibility
+* functions can only be executed with the maintenance sript:
+    ```
+    lua maintenance.lua print_all
+    ```
+* see comment in input-example/TEST.root.lua for details on the expected directory structure
 
 The repository mainly serves as a place to develop ideas and to document the project's evolution.
 
