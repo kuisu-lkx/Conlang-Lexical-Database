@@ -3,6 +3,7 @@ local U = require("util")
 local E = require("entry.entry")
 local PARSER = require("cli.parser")
 local listVIEW = require("cli.view.list")
+local fullVIEW = require("cli.view.full")
 
 --##############################################################################
 -- SUBSCRIPT: Command line interface
@@ -48,41 +49,6 @@ U.sort_by_order(
 --==============================================================================
 -- SECTION: TODO: Functions to move
 --==============================================================================
-
---++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
--- FUNCTION: TODO
--- PRINT ENTRY (FULL) - TODO make view script
----------------------
-
--- Dumps every key and nested table.
-
--- Accepts either:
---     print_entry_full("fanaheak")
------------------------------------
-
--- or:
---     print_entry_full(entry)
---++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-
-function CLI.print_entry_full(arg)
-
-    local entry
-
-    if type(arg) == "table" then
-        entry = arg
-
-    else
-        entry = U.find_stem(arg)
-
-    end
-
-    print("----------------------------------------")
-
-    U.dump_table(entry)
-
-    print("----------------------------------------")
-
-end
 
 --++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 -- FUNCTION: TODO
@@ -145,7 +111,7 @@ elseif cmd == "print_all" then
     print("") --newline
 
 elseif cmd == "print_full" then
-    CLI.print_entry_full(argv[2])
+    fullVIEW.print_entry_full(argv[2], options)
 
 elseif cmd == "find" then
     CLI.find_by_key(argv[2], argv[3])
