@@ -73,7 +73,7 @@ The command line interface is still under active development and currently serve
 
 Screenshot:
 
-![alt text](https://github.com/kuisu-lkx/Conlang-Lexical-Database/Screenshot.png "Screenshot")
+![alt text](https://github.com/kuisu-lkx/Conlang-Lexical-Database/blob/main/Screenshot.png "Screenshot")
 
 ---
 
