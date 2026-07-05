@@ -1,6 +1,7 @@
 local U = require("util")
 local ANSI = require("cli.ansi")
 local tableVIEW = require("cli.view.table")
+local LAYOUT = require("cli.layout")
 
 --##############################################################################
 -- SUBSCRIPT: CLI formatter for list view
@@ -73,10 +74,47 @@ function fullVIEW.print_entry_full(arg, options)
 
     --U.dump_table(entry)
 
-    nominal_paradigm()
+    --nominal_paradigm()
 
 
     --print("----------------------------------------")
+
+
+    local left = LAYOUT.text{
+
+        text = [[Horse
+
+Equus]]
+
+    }
+
+    local right = LAYOUT.text{
+
+        text = [[1
+2
+3
+4]]
+
+    }
+
+
+    local screen = LAYOUT.hstack{
+
+        children = {
+
+            left,
+
+            right
+
+        },
+
+        spacing = 4,
+
+        align = "center"
+
+    }
+
+    print(table.concat(screen.lines, "\n"))
 
 end
 
