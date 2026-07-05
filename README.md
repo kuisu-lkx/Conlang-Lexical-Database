@@ -10,6 +10,38 @@ Instead of manually maintaining pronunciation, stems, paradigms and other derive
 
 The long-term goal is not to build a language processor, but to create a practical workbench for conlang development: a place where phonology, morphology and the lexicon can evolve together while remaining internally consistent.
 
+---
+
+## Current capabilities
+
+The project is able to generate large parts of a dictionary automatically from compact lexical input.
+
+Currently implemented features include:
+
+- structured lexical database with explicit linguistic data model
+- automatic generation of:
+  - contracted and expanded stems
+  - phonological forms
+  - IPA transcription
+  - nominal declension paradigms
+  - compound entries
+- configurable dictionary-style terminal output
+- alphabetical sorting using a custom language-specific alphabet
+- sorting by arbitrary linguistic categories
+- automatic categorisation based on directory structure
+- metadata support (status, notes, warnings, citations, changelog)
+- modular architecture separating:
+  - lexical constructors
+  - linguistic generators
+  - rendering
+  - CLI infrastructure
+
+The project is designed around the morphology and phonology of **one specific conlang**.
+
+It is **not** intended to become a general-purpose conlang framework or dictionary generator.
+
+---
+
 ## Why?
 
 Conlangs evolve.
@@ -20,24 +52,49 @@ By deriving information from a compact lexical database, the language can be ref
 
 In that sense, the database becomes both a reference and a laboratory for the language.
 
+---
+
+## Trying it
+
+The repository contains a small bundled example dictionary.
+
+After cloning the repository, simply run
+
+```bash
+lua run.lua print_all -tmc
+```
+
+to generate a formatted dictionary listing.
+
+If a local `entries/` directory exists, it is used automatically.
+Otherwise the bundled example dictionary in `demo/` is loaded.
+
+The command line interface is still under active development and currently serves mainly as a development and testing environment.
+
+Screenshot:
+
+![alt text](https://github.com/kuisu-lkx/Conlang-Lexical-Database/Screenshot.png "Screenshot")
+
+---
+
 ## Current state
 
 This is an active hobby project and very much a work in progress.
 
-The codebase changes frequently as both the software and the conlang develop together. There is currently:
+Both the software and the language evolve together, so the codebase changes frequently.
 
-* no stable release
-* no roadmap
-* no feature request process
-* no guarantee of backwards compatibility
-* functions can only be executed with the maintenance sript:
-    ```
-    lua maintenance.lua print_all
-    ```
-* for more functions see maintenance.lua "parse command" section, the cli is still some time away
-* see comment in input-example/TEST.root.lua for details on the expected directory structure
+At the moment there is:
 
-The repository mainly serves as a place to develop ideas and to document the project's evolution.
+- no stable release
+- no roadmap
+- no feature request process
+- no guarantee of backwards compatibility
+- an evolving command-line interface
+- a data model that is still refined as new linguistic features are added
+
+The repository primarily serves as both a development environment and documentation of the project's evolution.
+
+---
 
 ## AI-assisted development
 
@@ -47,8 +104,21 @@ The overall project design, linguistic concepts and development direction are my
 
 The result is a collaborative exploration of how software engineering and linguistic analysis can support one another during conlang development.
 
+---
+
 ## Inspiration
+
+This repository is probably far too specialised to be useful as-is for most people.
+
+However, individual ideas or implementation techniques may be useful to others.
 
 If you're building a conlang yourself and still keeping your vocabulary in text documents or spreadsheets, perhaps this idea is worth exploring.
 
 A lexical database doesn't just store your language—it can help you understand, test and refine it.
+
+Likewise, if you're interested in linguistic software, Lua, or data-driven language design, you're welcome to browse, reuse or adapt parts of the code for your own projects.
+
+
+
+
+

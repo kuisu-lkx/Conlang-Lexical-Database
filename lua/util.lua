@@ -1,55 +1,228 @@
 local S = require("state")
 local unicode = require("unicode")
+local ANSI = require("cli.ansi")
 
---#############################################################################
--- SUBSCRIPT FOR UTIL FUCTIONS
---#############################################################################
+--##############################################################################
+-- SUBSCRIPT: Util functions
+--##############################################################################
 
 local U = {}
---[[
---#############################################################################
--- ALPHABETICAL SORTER
---#############################################################################
 
-function local U.get_pos_in_alphabet(character)
-    for i, group in ipairs(S.alphabet) do
-        for _, c in ipairs(group) do
-            if character == c then
-                return i
-            end
+--==============================================================================
+-- SECTION: Debugging
+--==============================================================================
+
+--++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+-- FUNCTION: Debug message printer
+--++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+function U.debug(str)
+
+    if S.debug_mode then
+        print(str)
+
+    end
+
+end
+
+--++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+-- FUNCTION: Dump token stream table
+--++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+function U.dump_table(tbl, indent)
+
+    indent = indent or ""
+
+    local keys = {}
+
+    for key in pairs(tbl) do
+
+        table.insert(keys, key)
+
+    end
+
+    table.sort(
+        keys,
+        function(a, b)
+            return tostring(a) < tostring(b)
         end
+    )
+
+    for _, key in ipairs(keys) do
+
+        local value = tbl[key]
+
+        if type(value) == "table" then
+
+            print(
+                indent
+                .. ANSI.bold_dim(tostring(key))
+                .. ANSI.dim(" = ")
+                --.. ANSI.dim(" = {")
+            )
+
+            U.dump_table(
+                value,
+                indent .. "    "
+            )
+
+            --print(
+            --    indent
+            --    .. ANSI.dim("}")
+            --)
+
+        else
+
+            print(
+                indent
+                .. ANSI.bold_dim(tostring(key))
+                .. ANSI.dim(" = ")
+                .. tostring(value)
+            )
+
+        end
+
     end
+
 end
 
-function local U.get_utf8_chars(s)
+--==============================================================================
+-- SECTION: Alphabetical sorter with selectable sort alphabet
+--==============================================================================
+
+--------------------------------------------------------------------------------
+-- LOCAL FUNCTION: Determines position in lookup table
+--------------------------------------------------------------------------------
+
+local function get_position(character, lookup)
+
+    return lookup[character] or math.huge
+
+end
+
+--------------------------------------------------------------------------------
+-- LOCAL FUNCTION: Filter for utf-8 characters
+--------------------------------------------------------------------------------
+
+local function utf8_chars(text)
+
     local chars = {}
-    for c in s:gmatch("([%z\1-\127\194-\244][\128-\191]*)") do
-        chars[#chars+1] = c
+
+    for char in text:gmatch("([%z\1-\127\194-\244][\128-\191]*)") do
+        chars[#chars + 1] = char
+
     end
+
     return chars
+
 end
 
-function U.sort_alphabetical(a, b, alphabet)
-    local a_chars = U.get_utf8_chars(unicode.utf8.lower(a))
-    local b_chars = U.get_utf8_chars(unicode.utf8.lower(b))
+--------------------------------------------------------------------------------
+-- LOCAL FUNCTION: Compare position of two characters
+--------------------------------------------------------------------------------
+
+local function compare_alphabetical(a, b, alphabet)
+
+    a = a or ""
+    b = b or ""
+
+    local a_chars = utf8_chars(unicode.utf8.lower(a))
+    local b_chars = utf8_chars(unicode.utf8.lower(b))
 
     local length = math.min(#a_chars, #b_chars)
 
     for i = 1, length do
-        local a_pos = U.get_pos_in_alphabet(a_chars[i], alphabet)
-        local b_pos = U.get_pos_in_alphabet(b_chars[i], alphabet)
 
-        if a_pos ~= b_pos then
-            return a_pos < b_pos
+        local a_position = get_position(a_chars[i], alphabet)
+        local b_position = get_position(b_chars[i], alphabet)
+
+        if a_position ~= b_position then
+
+            return a_position < b_position
+
         end
+
     end
 
     return #a_chars < #b_chars
+
 end
-]]
---#############################################################################
--- Test if two syllables need a linking -h- inbetween them
---#############################################################################
+
+--++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+-- FUNCTION: Sort entries alphabetically
+--++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+function U.sort_by_alphabet(getter, alphabet, entries)
+
+    table.sort(entries, function(a, b)
+
+        return compare_alphabetical(
+            getter(a),
+            getter(b),
+            alphabet
+        )
+
+    end)
+
+end
+
+--==============================================================================
+-- SECTION: Category sorter with selectable sort order
+--==============================================================================
+
+--++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+-- FUNCTION: Sort by order TODO
+--++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+function U.sort_by_order(getter, order, entries)
+
+    local rank = {}
+
+    for i, value in ipairs(order) do
+
+        rank[value] = i
+
+    end
+
+    local last = #order + 1
+-- TODO second order alphabetical search: make alphabet selection available
+    table.sort(entries, function(a, b)
+
+        local ka = getter(a)
+        local kb = getter(b)
+
+        local ra = rank[ka]
+        local rb = rank[kb]
+
+        if ra and rb then
+
+            return ra < rb
+
+        elseif ra then
+
+            return true
+
+        elseif rb then
+
+            return false
+
+        else
+
+            return ka < kb
+
+        end
+
+    end)
+
+end
+
+--==============================================================================
+-- SECTION: Morphological helper functions
+--==============================================================================
+
+--++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+-- FUNCTION: Test if two syllables need a linking -h- inbetween them
+--++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 function U.needs_linking_h(syllable1, syllable2)
 
@@ -57,95 +230,212 @@ function U.needs_linking_h(syllable1, syllable2)
     local last  = unicode.utf8.sub(syllable1, -1, -1)
 
     for i = 1, #S.vowels do
-        if S.vowels[i] == first then
+
+        if S.vowels[i] == first or S.diphthongs[i] == first then
+
             for j = 1, #S.vowels do
-                if S.vowels[j] == last then
+
+                if S.vowels[j] == last or S.diphthongs[i] == last then
+
                     return true
+
                 end
+
             end
+
         end
+
     end
+
     return false
+
 end
 
---#############################################################################
--- UTF8 SPLIT
---
--- Converts a UTF8 string into a table of characters.
---#############################################################################
+--++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+-- FUNCTION: Assemble full stem string of a given format
+--++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-function U.utf8_chars(str)
+function U.assemble_stem(format)
 
-    local chars = {}
+    local result = ""
 
-    for _, codepoint in utf8.codes(str) do
-        table.insert(chars, utf8.char(codepoint))
+    if format.modifier then
+        result = result .. format.modifier
     end
 
-    return chars
+    if format.before then
+        result = result .. format.before
+    end
+
+    result = result .. format.main
+
+    if format.after then
+        result = result .. format.after
+    end
+
+    return result
+
 end
 
---#############################################################################
--- FIND ENTRIES
---#############################################################################
+--==============================================================================
+-- SECTION: Query functions
+--==============================================================================
 
-function U.find_entries(key, value)
+local extract = {
 
-    local result = {}
+    stem = {},
 
-    local use_pattern = value:find("[%*%?]") ~= nil
+    affix = {},
+
+    source = {},
+
+}
+
+extract.stem.form = function(entry)
+    return entry.stem.contracted.form
+    end
+
+extract.stem.class = function(entry)
+    return entry.stem.class
+    end
+
+extract.affix.prefix = function(entry)
+    return entry.affix.prefix
+    end
+
+extract.affix.suffix = function(entry)
+    return entry.affix.suffix
+    end
+
+extract.source.filename = function(entry)
+    return entry.source.filename
+    end
+
+-- Input abbreviations for search_entries()
+local extractors = {
+    stem = extract.stem.form,
+    class = extract.stem.class,
+    prefix = extract.affix.prefix,
+    postfix = extract.affix.suffix,
+    filename = extract.source.filename,
+}
+
+--------------------------------------------------------------------------------
+-- LOCAL FUNCTION: Resolve wildcard search patterns
+--------------------------------------------------------------------------------
+
+local function resolve_pattern(value)
+
+    local use_pattern =
+        value:find("[%*%?]") ~= nil
+
+    if not use_pattern then
+
+        return function(field)
+            return field == value
+            end
+
+    end
 
     local pattern = value
-
     pattern = pattern:gsub("%.", "%%.")
     pattern = pattern:gsub("%*", ".*")
     pattern = pattern:gsub("%?", ".")
-
     pattern = "^" .. pattern .. "$"
 
-    for _, entry in ipairs(S.entries) do
-        local field = tostring(entry[key] or "")
+    return function(field)
+        return field:match(pattern)
+    end
 
-        if
-            (not use_pattern and field == value)
-            or
-            (use_pattern and field:match(pattern))
-            then
-            table.insert(result, entry)
+end
+
+--------------------------------------------------------------------------------
+-- LOCAL FUNCTION: TODO still used? duplicate of search_entries()?
+--------------------------------------------------------------------------------
+
+local function search(list, extractor, value)
+
+    local result = {}
+    local matcher = resolve_pattern(value)
+
+    for _, object in ipairs(list) do
+
+        local field = tostring(extractor(object) or "")
+
+        if matcher(field) then
+
+            table.insert(result, object)
+
         end
+
     end
+
     return result
-end
-
---#############################################################################
--- FIND ENTRY
---#############################################################################
-
-function U.find_entry(key, value)
-
-    local matches =
-        U.find_entries(key, value)
-
-    if #matches == 0 then
-        error(
-            "No entry found for "
-            .. key
-            .. "="
-            .. value
-        )
-    end
-
-    if #matches > 1 then
-        error(
-            "Multiple entries found for "
-            .. key
-            .. "="
-            .. value
-        )
-    end
-
-    return matches[1]
 
 end
+
+--++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+-- FUNCTION: Search entries
+--++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+function U.search_entries(name, value)
+
+    local extractor = extractors[name]
+
+    if not extractor then
+
+        error("Unknown extractor: " .. tostring(name))
+
+    end
+
+    local result = {}
+    local matcher = resolve_pattern(value)
+
+    for _, entry in ipairs(S.entries) do
+
+        local field = tostring(extractor(entry) or "")
+
+        if matcher(field) then
+
+            table.insert(result, entry)
+
+        end
+
+    end
+
+    return result
+
+end
+
+--call like: U.search_entries(extractor, "ma*")
+
+--++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+-- FUNCTION: Find stem and return the entry
+--++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+function U.find_stem(stem, index)
+
+    index = index or 0
+
+    for _, entry in ipairs(S.entries) do
+
+        if U.assemble_stem(entry.stem.contracted.format.unicode) == stem
+        and entry.lemma.head_index == index
+        then
+            return entry
+        end
+
+    end
+
+    error(
+        ("No stem found: %s (%d)")
+        :format(stem, index)
+    )
+
+end
+
+--##############################################################################
+-- RETURN
+--##############################################################################
 
 return U

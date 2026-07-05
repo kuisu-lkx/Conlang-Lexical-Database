@@ -4,9 +4,10 @@
 # But keep directories searchable
 !*/
 
-# Except:
+# Except include:
 !/lua/**
-!/input-example/**
+!/demo/**
 !/README.md
+!/Screenshot.png
 !/.gitignore
 !/.gitattributes
