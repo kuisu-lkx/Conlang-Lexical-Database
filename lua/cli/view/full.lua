@@ -1,7 +1,8 @@
 local U = require("util")
 local ANSI = require("cli.ansi")
-local tableVIEW = require("cli.view.table")
+--local tableVIEW = require("cli.view.table")
 local LAYOUT = require("cli.layout")
+local TABLE = require("cli.table")
 
 --##############################################################################
 -- SUBSCRIPT: CLI formatter for list view
@@ -80,41 +81,83 @@ function fullVIEW.print_entry_full(arg, options)
     --print("----------------------------------------")
 
 
-    local left = LAYOUT.text{
 
-        text = [[Horse
+    local multiline = "line1\nline2\nline3"
 
-Equus]]
+--print(multiline)
 
-    }
+    local paradigm = TABLE.make{
 
-    local right = LAYOUT.text{
-
-        text = [[1
-2
-3
-4]]
-
-    }
-
-
-    local screen = LAYOUT.hstack{
-
-        children = {
-
-            left,
-
-            right
-
+        rows = {
+            {ANSI.bold_red("Singular"), multiline, ANSI.bold("Plural")},
+            {"Nom.", entry.paradigm.NOM.sg, "eaki"},
+            {"Nom.", entry.paradigm.NOM.sg, multiline}
         },
 
-        spacing = 4,
-
-        align = "center"
+        options = {
+            padding = 5,
+            spacing = 1,
+            vertical_after = {1},
+            horizontal_after = {1,2},
+            align = {"left", "center", "center"},
+            valign = {"center", "top", "bottom"},
+            style = TABLE.style.light_dim
+        }
 
     }
 
-    print(table.concat(screen.lines, "\n"))
+    local explanation = LAYOUT.text{
+
+        text = "Explanatory text,\nblabla bla bla\nblabla",
+        align = "left"
+
+    }
+
+--U.dump_table(explanation)
+    local framed_explanation = LAYOUT.frame{
+
+        child = explanation,
+
+        style = TABLE.style.light_dim,
+
+        hpadding = 0,
+        vpadding = 1,
+
+        sides = {
+
+            top = true,
+            bottom = true,
+            left = true,
+            right = true
+
+        }
+
+    }
+
+    local middle = LAYOUT.hstack{
+
+        spacing = 8,
+        align = "center",
+        children = {
+            --paradigm,
+            framed_explanation
+        }
+
+    }
+
+
+
+    --print("PARADIGM", paradigm.height)
+    --print("MIDDLE", middle.height)
+
+    --print("PARADIGM")
+    --U.dump_table(paradigm.lines)
+
+    --print("MIDDLE")
+    --U.dump_table(middle.lines)
+
+    print(table.concat(middle.lines, "\n"))
+
 
 end
 
