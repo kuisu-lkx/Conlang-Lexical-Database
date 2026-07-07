@@ -45,16 +45,11 @@ local function pad_line(line, width, mode)
         local left = math.floor(diff / 2)
         local right = diff - left
 
-        return
-            string.rep(" ", left)
-            .. line ..
-            string.rep(" ", right)
+        return string.rep(" ", left) .. line .. string.rep(" ", right)
 
     else
 
-        return
-            line ..
-            string.rep(" ", diff)
+        return line .. string.rep(" ", diff)
 
     end
 
@@ -82,43 +77,6 @@ local function block(lines)
 
 end
 
---[[
-function LAYOUT.pad_horizontal(child, width, align)
-
-    local diff = width - child.width
-
-    if diff <= 0 then
-        return child
-    end
-
-    local left = 0
-    local right = 0
-
-    if align == "right" then
-
-        left = diff
-
-    elseif align == "center" then
-
-        left = math.floor(diff / 2)
-        right = diff - left
-
-    else
-
-        right = diff
-
-    end
-
-    return LAYOUT.pad{
-
-        child = child,
-
-        left = left,
-        right = right
-
-    }
-
-end]]
 
 
 function LAYOUT.pad_horizontal(block, width, align)
@@ -145,50 +103,26 @@ function LAYOUT.pad_horizontal(block, width, align)
     local right = 0
 
     if align == "right" then
-
         left = diff
-
     elseif align == "center" then
-
         left = math.floor(diff / 2)
         right = diff - left
-
     else -- left
-
         right = diff
-
     end
 
     ---------------------------------------------------
     -- Assemble
     ---------------------------------------------------
 
-
-
     return LAYOUT.hstack{
-
         spacing = 0,
-
         align = "top",
-
         children = {
-
-            LAYOUT.spacer{
-
-                width = left
-
-            },
-
+            LAYOUT.spacer{width = left},
             block,
-
-            LAYOUT.spacer{
-
-                width = right
-
-            }
-
+            LAYOUT.spacer{width = right}
         }
-
     }
 
 end
@@ -273,7 +207,7 @@ end
 
 
 
-function LAYOUT.pad(tbl)
+function LAYOUT.pad_frame(tbl)
 
     local child = tbl.child
 
@@ -368,7 +302,7 @@ function LAYOUT.frame(tbl)
     if hpadding > 0
     or vpadding > 0 then
 --U.dump_table(child)
-        child = LAYOUT.pad{
+        child = LAYOUT.pad_frame{
 
             child = child,
 
@@ -626,16 +560,19 @@ end
 -- FUNCTION: Wrap string at fixed width
 --++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
+
 function LAYOUT.wrap_text(text, width)
---print(text)
+
     local out = {}
 
     local line = {}
 
     local visible = 0
 
-    local last_space = nil
     local active_ansi = nil
+
+    local last_visible = false
+    local at_line_start = true
 
     local pos = 1
 
@@ -657,7 +594,13 @@ function LAYOUT.wrap_text(text, width)
 
         visible = 0
 
-        last_space = nil
+        last_visible = false
+
+        at_line_start = true
+
+        if active_ansi then
+            table.insert(line, active_ansi)
+        end
 
     end
 
@@ -676,103 +619,78 @@ function LAYOUT.wrap_text(text, width)
         pos = token.next
 
         ------------------------------------------------
-        -- Existing newline
+        -- ANSI state
         ------------------------------------------------
 
-        if token.is_newline then
+        if token.visible == 0 and not token.is_newline then
+
+            if token.text == "\27[0m" then
+                active_ansi = nil
+            else
+                active_ansi = token.text
+            end
+
+        ------------------------------------------------
+        -- Explicit newline
+        ------------------------------------------------
+
+        elseif token.is_newline then
 
             flush()
 
-        else
+        ------------------------------------------------
+        -- Wrap
+        ------------------------------------------------
 
-            if token.visible == 0 and not token.is_newline then
+        elseif visible + token.visible > width then
 
-                if token.text == "\27[0m" then
-                    active_ansi = nil
-                else
-                    active_ansi = token.text
-                end
+            ------------------------------------------------
+            -- Hyphenate if we're breaking inside a word
+            ------------------------------------------------
+
+            if last_visible and token.visible > 0 then
+
+                table.insert(line, "-")
 
             end
 
-            ------------------------------------------------
-            -- Append token
-            ------------------------------------------------
+            flush()
 
-            table.insert(line, token.text)
-
-            visible = visible + token.visible
+            ------------------------------------------------
+            -- Don't start a line with spaces
+            ------------------------------------------------
 
             if token.is_space then
-                last_space = #line
-            end
-
-            ------------------------------------------------
-            -- Wrap
-            ------------------------------------------------
-
-            if visible > width then
-
-                ------------------------------------------------
-                -- Wrap at previous space
-                ------------------------------------------------
-
-                if last_space then
-
-                    local remainder = {}
-
-                    for i = last_space + 1, #line do
-                        table.insert(remainder, line[i])
-                    end
-
-                    -- Remove trailing space
-                    table.remove(line, last_space)
-
-                    flush()
-
-                    line = remainder
-
-                    if active_ansi then
-                        table.insert(line, 1, active_ansi)
-                    end
-
-                    ------------------------------------------------
-                    -- Recompute visible length
-                    ------------------------------------------------
-
-                    visible = 0
-
-                    last_space = nil
-
-                    for i, piece in ipairs(line) do
-
-                        visible = visible + LAYOUT.visible_length(piece)
-
-                        if piece == " " then
-                            last_space = i
-                        end
-
-                    end
-
-                ------------------------------------------------
-                -- No previous space
-                ------------------------------------------------
-
-                else
-
-                    local last = table.remove(line)
-
-                    flush()
-
-                    table.insert(line, last)
-
-                    visible = token.visible
-
-                end
-
+                goto continue
             end
 
         end
+
+        ------------------------------------------------
+        -- Skip leading spaces
+        ------------------------------------------------
+
+        if at_line_start and token.is_space then
+            goto continue
+        end
+
+        ------------------------------------------------
+        -- Append token
+        ------------------------------------------------
+
+        if not token.is_newline then
+            table.insert(line, token.text)
+        end
+
+        visible = visible + token.visible
+
+        if token.visible > 0 then
+            at_line_start = false
+        end
+
+        last_visible = token.visible > 0 and not token.is_space
+
+        ::continue::
 
     end
 

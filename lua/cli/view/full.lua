@@ -94,10 +94,10 @@ U.dump_table(options)
     -- make formatted nominal paradigm
 
 local framed_paradigm = {}
-
+local paradigm = {}
 if entry.stem.class:match("^n") then
 
-    local paradigm = {}
+
 
 
     local paradigm_formated = {}
@@ -125,18 +125,30 @@ if entry.stem.class:match("^n") then
 
         end
 
-        if options.abbreviated then
-            base = base .. "~"
-        else
+        if format.before ~= ""
+        or (format.modifier and format.modifier ~= "") then
 
-            if format.modifier then
-                base = base .. format.modifier
+
+            if options.abbreviated then
+                base = base .. "~"
+
+            else
+
+                if format.modifier then
+                    base = base .. format.modifier .. format.before
+
+                else
+                    base = base .. format.before
+
+                end
+
             end
 
-            if format.before then
-                base = base .. format.before
-            end
         end
+
+
+
+
         --TODO format stems differently (maybe only in morphology mode)
         if endings.stem == "contracted" then
             base = base .. format.main
@@ -205,7 +217,7 @@ if entry.stem.class:match("^n") then
     paradigm = TABLE.make{
 
         rows = {
-            {"", ANSI.bold_dim("Singular"), ANSI.bold_dim("Generic"), ANSI.bold_dim("Plural")},
+            {ANSI.bold(entry.stem.class), ANSI.bold_dim("Singular"), ANSI.bold_dim("Generic"), ANSI.bold_dim("Plural")},
             paradigm_lines[1],
             paradigm_lines[2],
             paradigm_lines[3],
@@ -250,100 +262,250 @@ if entry.stem.class:match("^n") then
 
 end
 
-    local title_text = ""
+--==============================================================================
+-- SECTION: Assemble title line
+--==============================================================================
 
-    if options.morphology then
-        title_text = U.assemble_stem(entry.stem.contracted.format.morphology)
-    else
-        title_text = U.assemble_stem(entry.stem.contracted.format.unicode)
-    end
+local title_text = ""
 
-    title_text = unicode.utf8.upper(title_text)
+if options.morphology then
+    title_text = U.assemble_stem(entry.stem.contracted.format.morphology)
+else
+    title_text = U.assemble_stem(entry.stem.contracted.format.unicode)
+end
 
-    if options.color then
+title_text = unicode.utf8.upper(title_text)
 
-        if entry.stem.class:match("^v") then
-            title_text = ANSI.bold_yellow(title_text)
+if options.color then
 
-        elseif entry.stem.class:match("^n") then
-            title_text = ANSI.bold_blue(title_text)
-
-        else
-            title_text = ANSI.bold(title_text)
-
-        end
-
+    if entry.stem.class:match("^v") then
+        title_text = ANSI.bold_yellow(title_text)
+    elseif entry.stem.class:match("^n") then
+        title_text = ANSI.bold_blue(title_text)
     else
         title_text = ANSI.bold(title_text)
     end
 
-    local title = LAYOUT.text{
+else
+    title_text = ANSI.bold(title_text)
+end
 
-        text = title_text,
-        align = "center"
+local title = LAYOUT.text{
+    text = title_text,
+    align = "center"
+}
 
+local status = {}
+
+if options.status then
+    status = BLOCK.status(entry)
+else
+    status = LAYOUT.text{text = "", align = "center"}
+end
+
+local title_table = TABLE.make{
+
+    rows = {
+        {title, ANSI.bold_dim("Status: "), status}
+    },
+
+    options = {
+        padding = 0,
+        spacing = 1,
+        vertical_after = {},
+        horizontal_after = {},
+        align = {"left", "left"},
+        valign = {"center", "center"},
+        style = TABLE.style.light_dim
     }
 
-    local status = BLOCK.status(entry)
+}
 
-    local title_line = LAYOUT.hstack{
+local title_line = LAYOUT.hstack{
+    spacing = 8,
+    align = "center",
+    children = {
+        title,
+        status
+    }
+}
 
-        spacing = 8,
-        align = "center",
+--==============================================================================
+-- SECTION: Assemble stem info table
+--==============================================================================
+
+local contracted_ipa = BLOCK.contracted_stem(entry, "ipa_br")
+
+
+local rows = {
+    {
+        ANSI.bold_dim("Class:"),
+        entry.stem.class .. "   ",
+        ANSI.bold_dim("Contracted:"),
+        BLOCK.contracted_stem(entry, "text"),
+        contracted_ipa,
+    },
+}
+
+if entry.stem.expanded then
+
+    local expanded_ipa = BLOCK.expanded_stem(entry, "ipa_br", true)
+
+    table.insert(
+        rows,
+        {
+            "",
+            "",
+            ANSI.bold_dim("Expanded:"),
+            BLOCK.expanded_stem(entry, "text", true),
+            expanded_ipa,
+        }
+    )
+
+end
+
+
+local stem_info_table = TABLE.make{
+
+    rows = rows,
+
+    options = {
+        padding = 0,
+        spacing = 1,
+        vertical_after = {},
+        horizontal_after = {0},
+        align = {"right", "left", "right", "left", "left"},
+        valign = {"center", "center", "center", "center", "center"},
+        style = TABLE.style.light_dim
+    }
+
+}
+
+local stem_info_hstack = LAYOUT.hstack{
+
+    spacing = 0,
+    align = "left",
+    children = {
+        BLOCK.indent(2),
+        stem_info_table,
+    }
+
+}
+
+local stem_info_section = LAYOUT.vstack{
+    spacing = 0,
+    align = "left",
+    children = {
+        LAYOUT.text{
+            text =
+                ANSI.dim(string.rep("─", 6))
+                .. ANSI.bold_dim(" STEM ")
+                .. ANSI.dim(string.rep("─", 64)),
+            align = "left"},
+        stem_info_hstack
+    }
+}
+
+
+--==============================================================================
+-- SECTION: Assemble translation table
+--==============================================================================
+
+
+local translation_hstack = LAYOUT.hstack{
+
+    spacing = 0,
+    align = "left",
+    children = {
+        BLOCK.indent(2),
+        BLOCK.translation(entry, 71)
+    }
+
+}
+
+local translation_section = LAYOUT.vstack{
+    spacing = 0,
+    align = "left",
+    children = {
+        LAYOUT.text{
+            text =
+            ANSI.dim(string.rep("─", 6))
+            .. ANSI.bold_dim(" TRANSLATION ")
+            .. ANSI.dim(string.rep("─", 57)),
+            align = "left"},
+            translation_hstack
+    }
+}
+
+
+
+--==============================================================================
+-- SECTION: assemble paradigm section
+--==============================================================================
+local paradigm_section = {}
+
+if entry.stem.class:match("^n") then
+
+    local paradigm_hstack = LAYOUT.hstack{
+
+        spacing = 0,
+        align = "left",
         children = {
-            title,
-            status
-            --empty_line
+            BLOCK.indent(2),
+            paradigm,
         }
 
     }
 
-
-
-
-    local explanation = LAYOUT.text{
-
-        text = "Explanatory text,\nblabla bla bla\nblabla",
-        align = "left"
-
+    paradigm_section = LAYOUT.vstack{
+        spacing = 0,
+        align = "left",
+        children = {
+            LAYOUT.text{
+                text =
+                ANSI.dim(string.rep("─", 6))
+                .. ANSI.bold_dim(" PARADIGM ")
+                .. ANSI.dim(string.rep("─", 60)),
+                align = "left"},
+                paradigm_hstack
+        }
     }
 
---U.dump_table(explanation)
+end
 
-    --replace paradigm by empty line if empty, TODO move into make paradigm-section function
-    local middle_paradigm = {}
-    if next(framed_paradigm) then
-        middle_paradigm = framed_paradigm
-    else
-        middle_paradigm = BLOCK.empty_screen_line()
+
+
+
+
+
+--/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\
+--\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/
+
+
+    local screen_children = {
+        title_table,
+    }
+
+    table.insert(screen_children, BLOCK.empty_screen_line())
+    table.insert(screen_children, stem_info_section)
+
+    if options.translation then
+        table.insert(screen_children, BLOCK.empty_screen_line())
+        table.insert(screen_children, translation_section)
     end
 
-    local middle = LAYOUT.hstack{
+    if entry.stem.class:match("^n") then
+        table.insert(screen_children, BLOCK.empty_screen_line())
+        table.insert(screen_children, paradigm_section)
+    end
 
-        spacing = 8,
-        align = "center",
-        children = {
-            middle_paradigm,
-            --explanation
-            --empty_line
-        }
-
-    }
-
-
-
-
+    table.insert(screen_children, BLOCK.empty_screen_line())
 
     local screen = LAYOUT.vstack{
 
         spacing = 0,
         align = "left",
-        children = {
-            title_line,
-            BLOCK.empty_screen_line(),
-            BLOCK.translation(entry, 76),
-            --middle
-        }
+        children = screen_children
 
     }
 
@@ -367,30 +529,12 @@ end
 
     }
 
-    --print("PARADIGM", paradigm.height)
-    --print("MIDDLE", middle.height)
-
-    --print("PARADIGM")
-    --U.dump_table(paradigm.lines)
-
-    --print("MIDDLE")
-    --U.dump_table(middle.lines)
+--/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\
+--\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/
 
     print(table.concat(framed_screen.lines, "\n"))
 
-
 end
-
-
-
-
-
-
-
-
-
-
-
 
 --##############################################################################
 -- RETURN

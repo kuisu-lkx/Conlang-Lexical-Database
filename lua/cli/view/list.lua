@@ -31,7 +31,7 @@ local roman = {
 --==============================================================================
 
 --------------------------------------------------------------------------------
--- LOCAL FUNCTION: Format contracted stem string
+-- LOCAL FUNCTION: Format contracted stem string TODO use block
 --------------------------------------------------------------------------------
 
 local function contracted_stem(entry, format, options)
@@ -97,7 +97,7 @@ local function contracted_stem(entry, format, options)
 end
 
 --------------------------------------------------------------------------------
--- LOCAL FUNCTION: Format expanded stem string
+-- LOCAL FUNCTION: Format expanded stem string TODO use block
 --------------------------------------------------------------------------------
 
 local function expanded_stem(entry, format, options)
