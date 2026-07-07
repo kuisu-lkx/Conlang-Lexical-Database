@@ -1,11 +1,16 @@
 local U = require("util")
+local S = require("state")
 local ANSI = require("cli.ansi")
 --local tableVIEW = require("cli.view.table")
 local LAYOUT = require("cli.layout")
 local TABLE = require("cli.table")
+local BLOCK = require("cli.block")
+
+
+local unicode = require("unicode")
 
 --##############################################################################
--- SUBSCRIPT: CLI formatter for list view
+-- SUBSCRIPT: CLI formatter for full view
 --##############################################################################
 
 local fullVIEW = {}
@@ -59,8 +64,10 @@ end
 --     print_entry_full(entry)
 --++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-function fullVIEW.print_entry_full(arg, options)
+function fullVIEW.print_entry(arg)
 
+    local options = S.options
+U.dump_table(options)
     local entry
 
     if type(arg) == "table" then
@@ -82,46 +89,153 @@ function fullVIEW.print_entry_full(arg, options)
 
 
 
-    local multiline = "line1\nline2\nline3"
+    local multiline = "line1\nline2line3"
 
---print(multiline)
+    -- make formatted nominal paradigm
 
-    local paradigm = TABLE.make{
+local framed_paradigm = {}
+
+if entry.stem.class:match("^n") then
+
+    local paradigm = {}
+
+
+    local paradigm_formated = {}
+
+    for case, endings in pairs(S.inflections.nominal[entry.stem.class]) do
+
+        local base = ""
+        local format = {}
+
+        if options.morphology then
+
+            if endings.stem == "contracted" then
+                format = entry.stem.contracted.format.morphology
+            elseif endings.stem == "expanded" then
+                format = entry.stem.expanded.format.morphology
+            end
+
+        else
+
+            if endings.stem == "contracted" then
+                format = entry.stem.contracted.format.unicode
+            elseif endings.stem == "expanded" then
+                format = entry.stem.expanded.format.unicode
+            end
+
+        end
+
+        if options.abbreviated then
+            base = base .. "~"
+        else
+
+            if format.modifier then
+                base = base .. format.modifier
+            end
+
+            if format.before then
+                base = base .. format.before
+            end
+        end
+        --TODO format stems differently (maybe only in morphology mode)
+        if endings.stem == "contracted" then
+            base = base .. format.main
+        elseif endings.stem == "expanded" then
+            base = base .. format.main
+        end
+
+
+
+        if format.after then
+            base = base .. format.after
+        end
+
+        if options.morphology then
+        base = base .. "·"
+        end
+
+
+
+        paradigm_formated[case] = {
+            stem = endings.stem,
+            sg = base .. ANSI.bold(endings.sg),
+            gc = base .. ANSI.bold(endings.gc),
+            pl = base .. ANSI.bold(endings.pl)
+        }
+
+    end
+
+
+
+
+
+
+    local paradigm_lines = {}
+    for case, forms in pairs(paradigm_formated) do
+        local line = {}
+        local singular = forms.sg
+        local generic = forms.gc
+        local plural = forms.pl
+
+        --TODO add real ipa of forms
+        if options.paradigm_ipa then
+            local ipa = "[" .. U.assemble_stem(entry.stem.contracted.format.ipa) .. "]"
+
+            singular = singular .. "\n" .. ANSI.dim(ipa)
+            generic = generic .. "\n" .. ANSI.dim(ipa)
+            plural = plural .. "\n" .. ANSI.dim(ipa)
+        end
+
+        line = {case, singular, generic, plural}
+        table.insert(paradigm_lines, line)
+
+    end
+
+    table.sort(paradigm_lines, function(a, b)
+
+    return S.case_rank[a[1]] < S.case_rank[b[1]]
+
+    end)
+    -- TODO replace case abbr.
+    -- Format case only after sorting
+    for _, lines in ipairs(paradigm_lines) do
+        lines[1] = ANSI.bold_dim(lines[1])
+    end
+
+    paradigm = TABLE.make{
 
         rows = {
-            {ANSI.bold_red("Singular"), multiline, ANSI.bold("Plural")},
-            {"Nom.", entry.paradigm.NOM.sg, "eaki"},
-            {"Nom.", entry.paradigm.NOM.sg, multiline}
+            {"", ANSI.bold_dim("Singular"), ANSI.bold_dim("Generic"), ANSI.bold_dim("Plural")},
+            paradigm_lines[1],
+            paradigm_lines[2],
+            paradigm_lines[3],
+            paradigm_lines[4],
+            paradigm_lines[5],
+            paradigm_lines[6],
+            paradigm_lines[7],
+            paradigm_lines[8],
         },
 
         options = {
-            padding = 5,
+            padding = 1,
             spacing = 1,
             vertical_after = {1},
-            horizontal_after = {1,2},
-            align = {"left", "center", "center"},
-            valign = {"center", "top", "bottom"},
+            horizontal_after = {1},
+            align = {"left", "left", "left", "left"},
+            valign = {"center", "center", "center", "center"},
             style = TABLE.style.light_dim
         }
 
     }
 
-    local explanation = LAYOUT.text{
+    framed_paradigm = LAYOUT.frame{
 
-        text = "Explanatory text,\nblabla bla bla\nblabla",
-        align = "left"
-
-    }
-
---U.dump_table(explanation)
-    local framed_explanation = LAYOUT.frame{
-
-        child = explanation,
+        child = paradigm,
 
         style = TABLE.style.light_dim,
 
-        hpadding = 0,
-        vpadding = 1,
+        hpadding = 1,
+        vpadding = 0,
 
         sides = {
 
@@ -134,18 +248,124 @@ function fullVIEW.print_entry_full(arg, options)
 
     }
 
-    local middle = LAYOUT.hstack{
+end
+
+    local title_text = ""
+
+    if options.morphology then
+        title_text = U.assemble_stem(entry.stem.contracted.format.morphology)
+    else
+        title_text = U.assemble_stem(entry.stem.contracted.format.unicode)
+    end
+
+    title_text = unicode.utf8.upper(title_text)
+
+    if options.color then
+
+        if entry.stem.class:match("^v") then
+            title_text = ANSI.bold_yellow(title_text)
+
+        elseif entry.stem.class:match("^n") then
+            title_text = ANSI.bold_blue(title_text)
+
+        else
+            title_text = ANSI.bold(title_text)
+
+        end
+
+    else
+        title_text = ANSI.bold(title_text)
+    end
+
+    local title = LAYOUT.text{
+
+        text = title_text,
+        align = "center"
+
+    }
+
+    local status = BLOCK.status(entry)
+
+    local title_line = LAYOUT.hstack{
 
         spacing = 8,
         align = "center",
         children = {
-            --paradigm,
-            framed_explanation
+            title,
+            status
+            --empty_line
         }
 
     }
 
 
+
+
+    local explanation = LAYOUT.text{
+
+        text = "Explanatory text,\nblabla bla bla\nblabla",
+        align = "left"
+
+    }
+
+--U.dump_table(explanation)
+
+    --replace paradigm by empty line if empty, TODO move into make paradigm-section function
+    local middle_paradigm = {}
+    if next(framed_paradigm) then
+        middle_paradigm = framed_paradigm
+    else
+        middle_paradigm = BLOCK.empty_screen_line()
+    end
+
+    local middle = LAYOUT.hstack{
+
+        spacing = 8,
+        align = "center",
+        children = {
+            middle_paradigm,
+            --explanation
+            --empty_line
+        }
+
+    }
+
+
+
+
+
+    local screen = LAYOUT.vstack{
+
+        spacing = 0,
+        align = "left",
+        children = {
+            title_line,
+            BLOCK.empty_screen_line(),
+            BLOCK.translation(entry, 76),
+            --middle
+        }
+
+    }
+
+    local framed_screen = LAYOUT.frame{
+
+        child = screen,
+
+        style = TABLE.style.double,
+
+        hpadding = 1,
+        vpadding = 0,
+
+        sides = {
+
+            top = true,
+            bottom = true,
+            left = true,
+            right = true
+
+        }
+
+    }
 
     --print("PARADIGM", paradigm.height)
     --print("MIDDLE", middle.height)
@@ -156,7 +376,7 @@ function fullVIEW.print_entry_full(arg, options)
     --print("MIDDLE")
     --U.dump_table(middle.lines)
 
-    print(table.concat(middle.lines, "\n"))
+    print(table.concat(framed_screen.lines, "\n"))
 
 
 end

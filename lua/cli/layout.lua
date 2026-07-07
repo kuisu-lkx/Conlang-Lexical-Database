@@ -9,10 +9,20 @@ local LAYOUT = {}
 
 function LAYOUT.visible_length(text)
 
-    -- Remove ANSI escape sequences
+    -- ANSI
     text = text:gsub("\27%[[0-9;]*m", "")
 
-    return utf8.len(text) or 0
+    local length = 0
+
+    for _, codepoint in utf8.codes(text) do
+        --remove unicode combining characters from count
+        if not (codepoint >= 0x0300 and codepoint <= 0x036F) then
+            length = length + 1
+        end
+
+    end
+
+    return length
 
 end
 
@@ -490,6 +500,312 @@ function LAYOUT.text(tbl)
 
 end
 
+
+
+
+--==============================================================================
+-- SECTION: Fixed width text blocks
+--==============================================================================
+
+--------------------------------------------------------------------------------
+-- LOCAL FUNCTION: Tokenizer
+--------------------------------------------------------------------------------
+
+local function is_combining_mark(cp)
+
+    return cp >= 0x0300
+       and cp <= 0x036F
+
+end
+
+--------------------------------------------------------------------------------
+-- LOCAL FUNCTION: Tokenizer
+--------------------------------------------------------------------------------
+
+local function next_token(text, pos)
+
+    ---------------------------------------------------
+    -- End of string
+    ---------------------------------------------------
+
+    if pos > #text then
+        return nil
+    end
+
+    ---------------------------------------------------
+    -- ANSI escape sequence
+    ---------------------------------------------------
+
+    if text:byte(pos) == 27 then
+
+        local finish = text:find("m", pos, true)
+
+        if not finish then
+            finish = #text
+        end
+
+        return {
+            text = text:sub(pos, finish),
+            visible = 0,
+            is_space = false,
+            is_newline = false,
+            next = finish + 1
+        }
+
+    end
+
+    ---------------------------------------------------
+    -- Newline
+    ---------------------------------------------------
+
+    if text:sub(pos, pos) == "\n" then
+
+        return {
+            text = "\n",
+            visible = 0,
+            is_space = false,
+            is_newline = true,
+            next = pos + 1
+        }
+
+    end
+
+    ---------------------------------------------------
+    -- Read one UTF-8 character
+    ---------------------------------------------------
+
+    local next_pos = utf8.offset(text, 2, pos)
+
+    if not next_pos then
+        next_pos = #text + 1
+    end
+
+    local token = text:sub(pos, next_pos - 1)
+
+    local cursor = next_pos
+
+    ---------------------------------------------------
+    -- Append following combining marks
+    ---------------------------------------------------
+
+    while cursor <= #text do
+
+        local cp = utf8.codepoint(text, cursor)
+
+        if not is_combining_mark(cp) then
+            break
+        end
+
+        local after = utf8.offset(text, 2, cursor)
+
+        if not after then
+            after = #text + 1
+        end
+
+        token = token .. text:sub(cursor, after - 1)
+
+        cursor = after
+
+    end
+
+    ---------------------------------------------------
+    -- Return token
+    ---------------------------------------------------
+
+    return {
+        text = token,
+        visible = 1,
+        is_space = token == " ",
+        is_newline = false,
+        next = cursor
+    }
+
+end
+
+--++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+-- FUNCTION: Wrap string at fixed width
+--++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+function LAYOUT.wrap_text(text, width)
+--print(text)
+    local out = {}
+
+    local line = {}
+
+    local visible = 0
+
+    local last_space = nil
+    local active_ansi = nil
+
+    local pos = 1
+
+    ---------------------------------------------------
+    -- Flush current line
+    ---------------------------------------------------
+
+    local function flush()
+
+        local text = table.concat(line)
+
+        if active_ansi then
+            text = text .. "\27[0m"
+        end
+
+        table.insert(out, text)
+
+        line = {}
+
+        visible = 0
+
+        last_space = nil
+
+    end
+
+    ---------------------------------------------------
+    -- Main loop
+    ---------------------------------------------------
+
+    while true do
+
+        local token = next_token(text, pos)
+
+        if not token then
+            break
+        end
+
+        pos = token.next
+
+        ------------------------------------------------
+        -- Existing newline
+        ------------------------------------------------
+
+        if token.is_newline then
+
+            flush()
+
+        else
+
+            if token.visible == 0 and not token.is_newline then
+
+                if token.text == "\27[0m" then
+                    active_ansi = nil
+                else
+                    active_ansi = token.text
+                end
+
+            end
+
+            ------------------------------------------------
+            -- Append token
+            ------------------------------------------------
+
+            table.insert(line, token.text)
+
+            visible = visible + token.visible
+
+            if token.is_space then
+                last_space = #line
+            end
+
+            ------------------------------------------------
+            -- Wrap
+            ------------------------------------------------
+
+            if visible > width then
+
+                ------------------------------------------------
+                -- Wrap at previous space
+                ------------------------------------------------
+
+                if last_space then
+
+                    local remainder = {}
+
+                    for i = last_space + 1, #line do
+                        table.insert(remainder, line[i])
+                    end
+
+                    -- Remove trailing space
+                    table.remove(line, last_space)
+
+                    flush()
+
+                    line = remainder
+
+                    if active_ansi then
+                        table.insert(line, 1, active_ansi)
+                    end
+
+                    ------------------------------------------------
+                    -- Recompute visible length
+                    ------------------------------------------------
+
+                    visible = 0
+
+                    last_space = nil
+
+                    for i, piece in ipairs(line) do
+
+                        visible = visible + LAYOUT.visible_length(piece)
+
+                        if piece == " " then
+                            last_space = i
+                        end
+
+                    end
+
+                ------------------------------------------------
+                -- No previous space
+                ------------------------------------------------
+
+                else
+
+                    local last = table.remove(line)
+
+                    flush()
+
+                    table.insert(line, last)
+
+                    visible = token.visible
+
+                end
+
+            end
+
+        end
+
+    end
+
+    ---------------------------------------------------
+    -- Final line
+    ---------------------------------------------------
+
+    if #line > 0 then
+        flush()
+    end
+
+    return table.concat(out, "\n")
+
+end
+
+--++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+-- FUNCTION: Make fixed width text block
+--++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+function LAYOUT.text_wrapped(tbl)
+
+    local wrapped = LAYOUT.wrap_text(tbl.text or "", tbl.width)
+
+    return LAYOUT.text{text = wrapped}
+
+end
+
+
+
+
+
+
+
 function LAYOUT.spacer(tbl)
 
     local width  = tbl.width  or 0
@@ -498,12 +814,7 @@ function LAYOUT.spacer(tbl)
     local lines = {}
 
     for _ = 1, height do
-
-        table.insert(
-            lines,
-            string.rep(" ", width)
-        )
-
+        table.insert(lines, string.rep(" ", width))
     end
 
     return block(lines)
@@ -516,11 +827,7 @@ function LAYOUT.rule(tbl)
 
     local character = tbl.character or "─"
 
-    return block{
-
-        string.rep(character, width)
-
-    }
+    return block{string.rep(character, width)}
 
 end
 
@@ -541,16 +848,8 @@ function LAYOUT.hstack(tbl)
     local height = 0
 
     for _, child in ipairs(children) do
-
         height = math.max(height, child.height)
-
     end
-
-    --print("HSTACK HEIGHT", height)
-
-    --for i, child in ipairs(children) do
-        --print(i, child.height)
-    --end
 
     ---------------------------------------------------
     -- Pad children vertically
@@ -570,55 +869,27 @@ function LAYOUT.hstack(tbl)
         local filler = child.fill or " "
 
         if align_mode == "bottom" then
-
             top = diff
-
         elseif align_mode == "center" then
-
             top = math.floor(diff / 2)
             bottom = diff - top
-
         else -- top
-
             bottom = diff
-
         end
 
         -- Top padding
-
         for _ = 1, top do
-
-            table.insert(
-                lines,
-                string.rep(filler, child.width)
-            )
-
+            table.insert(lines, string.rep(filler, child.width))
         end
 
         -- Child
-
         for _, line in ipairs(child.lines) do
-
-            table.insert(
-                lines,
-                pad_line(
-                    line,
-                    child.width,
-                    "left"
-                )
-            )
-
+            table.insert(lines, pad_line(line, child.width, "left"))
         end
 
         -- Bottom padding
-
         for _ = 1, bottom do
-
-            table.insert(
-                lines,
-                string.rep(filler, child.width)
-            )
-
+            table.insert(lines, string.rep(filler, child.width))
         end
 
         table.insert(padded, lines)
@@ -637,17 +908,10 @@ function LAYOUT.hstack(tbl)
 
         for column, child in ipairs(children) do
 
-            --print(
-            --    column,
-            --    "'" .. padded[column][row] .. "'"
-            --)
-
             line = line .. padded[column][row]
 
             if column < #children then
-
                 line = line .. string.rep(" ", spacing)
-
             end
 
         end
@@ -655,8 +919,6 @@ function LAYOUT.hstack(tbl)
         table.insert(out, line)
 
     end
-
-
 
     return block(out)
 
@@ -677,9 +939,7 @@ function LAYOUT.vstack(tbl)
     local width = 0
 
     for _, child in ipairs(children) do
-
         width = math.max(width, child.width)
-
     end
 
     ---------------------------------------------------
@@ -691,23 +951,13 @@ function LAYOUT.vstack(tbl)
     for i, child in ipairs(children) do
 
         for _, line in ipairs(child.lines) do
-
-            table.insert(
-                lines,
-                pad_line(line, width, align_mode)
-            )
-
+            table.insert(lines, pad_line(line, width, align_mode))
         end
 
         if i < #children then
 
             for _ = 1, spacing do
-
-                table.insert(
-                    lines,
-                    string.rep(" ", width)
-                )
-
+                table.insert(lines, string.rep(" ", width))
             end
 
         end

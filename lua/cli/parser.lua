@@ -64,17 +64,7 @@ function PARSER.parse_options()
 
     local positional = {}
 
-    local options = {
-        status = false,
-        translation = false,
-        notes = false,
-        morphology = false,
-        abbreviated = true,
-        color = false,
-        dense = false,
-        changelog = false,
-        citations = false,
-    }
+    local options = S.options
 
     for _, a in ipairs(arg) do-- TODO print help, options table
 
@@ -106,6 +96,9 @@ function PARSER.parse_options()
 
             elseif a == "--citations" then
                 options.citations = true
+
+            elseif a == "--paradigm_ipa" then
+                options.paradigm_ipa = true
 
             else
                 error("Unknown option: " .. a)

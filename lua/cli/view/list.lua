@@ -1,5 +1,7 @@
+local S = require("state")
 local U = require("util")
 local ANSI = require("cli.ansi")
+local BLOCK = require("cli.block")
 
 --##############################################################################
 -- SUBSCRIPT: CLI formatter for list view
@@ -190,7 +192,7 @@ local function expanded_stem(entry, format, options)
 end
 
 --------------------------------------------------------------------------------
--- LOCAL FUNCTION: Format status string
+-- LOCAL FUNCTION: Format status string TODO use BLOCK!
 --------------------------------------------------------------------------------
 
 local function status(entry, options)
@@ -246,7 +248,7 @@ local function status(entry, options)
 end
 
 --------------------------------------------------------------------------------
--- LOCAL FUNCTION: Format translations string
+-- LOCAL FUNCTION: Format translations string TODO use BLOCK!
 --------------------------------------------------------------------------------
 
 function listVIEW.translations_string(entry)
@@ -306,6 +308,7 @@ function listVIEW.translations_string(entry)
         end
 
     end
+U.dump_table(out)
 
     return table.concat(out)
 
@@ -343,9 +346,10 @@ end
 --     print_entry(entry, options)
 --++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-function listVIEW.print_entry(arg, options)
+function listVIEW.print_entry(arg)
 
     local entry
+    local options = S.options
 
     if type(arg) == "table" then
         entry = arg

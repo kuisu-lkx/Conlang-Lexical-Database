@@ -13,6 +13,19 @@ S.entries = {}
 
 S.compounds = {}
 
+S.options = {
+    status = false,
+    translation = false,
+    notes = false,
+    morphology = false,
+    abbreviated = true,
+    color = false,
+    dense = false,
+    changelog = false,
+    citations = false,
+    paradigm_ipa = false,
+}
+
 S.file_patterns = {
 
     entries = {
@@ -44,6 +57,12 @@ S.case_order = {
     "GEN",
 
 }
+
+S.case_rank = {}
+
+for i, case in ipairs(S.case_order) do
+    S.case_rank[case] = i
+end
 
 --[[Human readable for later printout of paradigm
 S.cases = {

@@ -29,14 +29,14 @@ function PARADIGM.make_nominal(entry)
         entry.stem.class == "n5"
     ) then
 
-        for case, forms in pairs(S.inflections.nominal[entry.stem.class]) do
+        for case, endings in pairs(S.inflections.nominal[entry.stem.class]) do
 
             local base
 
-            if forms.stem == "contracted" then
+            if endings.stem == "contracted" then
                 base = U.assemble_stem(entry.stem.contracted.format.unicode)
 
-            elseif forms.stem == "expanded" then
+            elseif endings.stem == "expanded" then
                 base = U.assemble_stem(entry.stem.expanded.format.unicode)
 
             else
@@ -46,10 +46,10 @@ function PARADIGM.make_nominal(entry)
             end
 
             paradigm[case] = {
-                --stem = base,
-                sg = base .. forms.sg,
-                gc = base .. forms.gc,
-                pl = base .. forms.pl
+                stem = endings.stem,
+                sg = base .. endings.sg,
+                gc = base .. endings.gc,
+                pl = base .. endings.pl
             }
 
         end

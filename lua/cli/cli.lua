@@ -87,17 +87,17 @@ end
 
 --parse command
 local argv, options = PARSER.parse_options()
-
+S.options = options
 local cmd = argv[1]
 
 -- menu
 if cmd == "print" then
-    listVIEW.print_entry(argv[2], options)
+    listVIEW.print_entry(argv[2])
 
 elseif cmd == "print_list" then
 
     for i = 2, #argv do
-        listVIEW.print_entry(argv[i], options)
+        listVIEW.print_entry(argv[i])
     end
 
     print("") --newline
@@ -105,13 +105,13 @@ elseif cmd == "print_list" then
 elseif cmd == "print_all" then
 
     for _, entry in ipairs(S.entries) do
-        listVIEW.print_entry(entry, options)
+        listVIEW.print_entry(entry)
     end
 
     print("") --newline
 
 elseif cmd == "print_full" then
-    fullVIEW.print_entry_full(argv[2], options)
+    fullVIEW.print_entry(argv[2], options)
 
 elseif cmd == "find" then
     CLI.find_by_key(argv[2], argv[3])
