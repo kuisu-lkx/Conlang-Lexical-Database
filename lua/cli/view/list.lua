@@ -171,8 +171,6 @@ local function entry_section(entry)
 
     local entry_children = {}
 
-    table.insert(entry_children, BLOCK.empty_screen_line())
-
     table.insert(entry_children, word_section(entry))
 
     if S.options.translation then
@@ -229,6 +227,8 @@ end
 function listVIEW.print_screen(argv)
 
     local screen_children = {}
+
+    table.insert(screen_children, BLOCK.empty_screen_line())
 
     local entry
 

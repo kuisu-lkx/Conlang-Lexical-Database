@@ -26,6 +26,7 @@ Currently implemented features include:
   - nominal declension paradigms
   - compound entries
 - configurable dictionary-style terminal output
+- configurable entry-summary terminal output
 - alphabetical sorting using a custom language-specific alphabet
 - sorting by arbitrary linguistic categories
 - automatic categorisation based on directory structure
@@ -61,7 +62,7 @@ The repository contains a small bundled example dictionary.
 After cloning the repository, simply run
 
 ```bash
-lua run.lua print_all -tmc
+lua run.lua list :all -tmc
 ```
 
 to generate a formatted dictionary listing.
