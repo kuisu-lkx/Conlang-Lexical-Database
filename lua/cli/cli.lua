@@ -90,10 +90,10 @@ local argv = PARSER.parse_options()
 local cmd = argv[1]
 
 -- menu
-if cmd == "print" then
+--if cmd == "print" then
     --listVIEW.print_entry(argv[2])
 
-elseif cmd == "list" then
+if cmd == "list" then
 
     listVIEW.print_screen(argv)
 
@@ -103,7 +103,7 @@ elseif cmd == "show" then
 elseif cmd == "find" then
     CLI.find_by_key(argv[2], argv[3])
 
-elseif cmd == "translate" then
+--elseif cmd == "translate" then
     --print_translations(argv[2])
 else
     error("Unknown command: " .. cmd)

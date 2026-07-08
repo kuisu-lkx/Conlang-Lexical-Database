@@ -6,10 +6,15 @@ local TABLE = require("cli.table")
 local BLOCK = require("cli.block")
 
 --##############################################################################
--- SUBSCRIPT: CLI formatter for list view
+-- SUBSCRIPT: CLI screen formatter for list view
+-- TODO comment functions
 --##############################################################################
 
 local listVIEW = {}
+
+--==============================================================================
+-- SECTION: Assemble (sub)sections per entry
+--==============================================================================
 
 --------------------------------------------------------------------------------
 -- LOCAL FUNCTION: Assemble word section
@@ -92,12 +97,20 @@ end
 --------------------------------------------------------------------------------
 
 local function translations_section(entry)
+
+    local width = 0
+    if S.options.screen_frame then
+        width = 73
+    else
+        width = 77
+    end
+
     return LAYOUT.hstack{
         spacing = 0,
         align = "left",
         children = {
             BLOCK.indent(3),
-            BLOCK.translation(entry, 73)
+            BLOCK.translation(entry, width)
         }
     }
 end
@@ -107,6 +120,7 @@ end
 --------------------------------------------------------------------------------
 
 local function warning_section(entry)
+
     return LAYOUT.hstack{
         spacing = 0,
         align = "left",
@@ -118,6 +132,7 @@ local function warning_section(entry)
             }
         }
     }
+
 end
 
 --------------------------------------------------------------------------------
@@ -125,6 +140,7 @@ end
 --------------------------------------------------------------------------------
 
 local function attention_section(entry)
+
     return LAYOUT.hstack{
         spacing = 0,
         align = "left",
@@ -136,21 +152,16 @@ local function attention_section(entry)
             }
         }
     }
+
 end
 
 --==============================================================================
--- SECTION: Public Functions
+-- SECTION: Assemble entry sections
 --==============================================================================
 
---++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
--- FUNCTION: Print entry in list view
---
--- Accepts either:
---     print_entry("fanaheak", options)
---
--- or:
---     print_entry(entry, options)
---++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+--------------------------------------------------------------------------------
+-- LOCAL FUNCTION: Assemble sections for each entry from (sub)sections
+--------------------------------------------------------------------------------
 
 local function entry_section(entry)
 
@@ -165,13 +176,11 @@ local function entry_section(entry)
     table.insert(entry_children, word_section(entry))
 
     if S.options.translation then
-
         table.insert(entry_children, translations_section(entry))
     end
 
     if entry.meta.warning then
         table.insert(entry_children, warning_section(entry))
-
     end
 
     if S.options.note and entry.meta.attention then
@@ -209,6 +218,14 @@ local function entry_section(entry)
 
 end
 
+--==============================================================================
+-- SECTION: public
+--==============================================================================
+
+--++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+-- FUNCTION: Assemble screen from sections and print
+--++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
 function listVIEW.print_screen(argv)
 
     local screen_children = {}
@@ -236,9 +253,6 @@ function listVIEW.print_screen(argv)
         end
 
     end
-
-
-
 
     ----------------------------------------------------------------------------
     -- Stack sections vertically

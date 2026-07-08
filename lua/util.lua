@@ -434,6 +434,10 @@ function U.find_stem(stem, index)
 
 end
 
+--++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+-- FUNCTION: Find entry by lemma
+--++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
 function U.find_lemma(key, index, prefix, suffix)
 
     index = index or 0
@@ -458,7 +462,6 @@ function U.find_lemma(key, index, prefix, suffix)
     )
 
 end
-
 
 --##############################################################################
 -- RETURN

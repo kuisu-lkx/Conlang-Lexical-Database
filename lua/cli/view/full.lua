@@ -1,22 +1,20 @@
 local U = require("util")
 local S = require("state")
 local ANSI = require("cli.ansi")
---local tableVIEW = require("cli.view.table")
 local LAYOUT = require("cli.layout")
 local TABLE = require("cli.table")
 local BLOCK = require("cli.block")
-
-
 local unicode = require("unicode")
 
 --##############################################################################
--- SUBSCRIPT: CLI formatter for full view
+-- SUBSCRIPT: CLI screen formatter for full view
+-- TODO comment functions
 --##############################################################################
 
 local fullVIEW = {}
 
 --==============================================================================
--- SECTION: TODO
+-- SECTION: Assemble sections
 --==============================================================================
 
 --------------------------------------------------------------------------------
@@ -24,6 +22,12 @@ local fullVIEW = {}
 --------------------------------------------------------------------------------
 
 local function title_section(entry)
+
+    local title_children = {}
+
+    ----------------------------------------------------------------------------
+    -- TODO
+    ----------------------------------------------------------------------------
 
     local title_text = ""
 
@@ -49,41 +53,39 @@ local function title_section(entry)
         title_text = ANSI.bold(title_text)
     end
 
-    local title = LAYOUT.text{
-        text = title_text,
-        align = "center"
-    }
+    local title = LAYOUT.text{text = ANSI.bold_dim("  Entry: ") .. title_text, align = "center"}
 
-    local status = {}
+    table.insert(
+        title_children,
+        title
+    )
+
     if S.options.status then
-        status = LAYOUT.hstack{
-            spacing = 0,
-            align = "center",
-            children = {
-                LAYOUT.text{text = ANSI.bold_dim("Status: "), align = "right"},
-                BLOCK.status(entry)
+
+        table.insert(
+            title_children,
+            LAYOUT.text{
+                text = string.rep(" ", 54-title.width),
+                align = "right"
             }
-        }
-    else
-        status = LAYOUT.text{text = "", align = "center"}
+        )
+
+        table.insert(
+            title_children,
+            LAYOUT.text{text = ANSI.bold_dim("Status: "), align = "right"}
+        )
+
+        table.insert(
+            title_children,
+            BLOCK.status(entry)
+        )
+
     end
 
-    return TABLE.make{
-
-        rows = {
-            {title, string.rep(" ", 54-title.width),status},
-        },
-
-        options = {
-            padding = 0,
-            spacing = 0,
-            vertical_after = {},
-            horizontal_after = {},
-            align = {"left", "right", "right"},
-            valign = {"center", "center", "center"},
-            style = TABLE.style.light_dim
-        }
-
+    return LAYOUT.hstack{
+        spacing = 0,
+        align = "center",
+        children = title_children
     }
 
 end
@@ -104,7 +106,7 @@ local function lemma_section(entry)
 
     local rows_lemma = {
         {
-            ANSI.bold_dim("Head:"),
+            ANSI.bold_dim(" Head:"),
             ANSI.bold(head.lemma.head.key) .. "   ",
             ANSI.bold_dim("Index:"),
             head.lemma.head.index .. "   ",
@@ -142,19 +144,22 @@ local function lemma_section(entry)
     end
 
         local lemma_info_table = TABLE.make{
-
             rows = rows_lemma,
-
             options = {
                 padding = 0,
                 spacing = 1,
                 vertical_after = {},
                 horizontal_after = {0},
-                align = {"right", "left", "right", "left", "right", "left", "right", "left"},
-                valign = {"center", "center", "center", "center", "center", "center", "center", "center"},
+                align = {
+                    "right", "left", "right", "left",
+                    "right", "left", "right", "left"
+                },
+                valign = {
+                    "center", "center", "center", "center",
+                    "center", "center", "center", "center"
+                },
                 style = TABLE.style.light_dim
             }
-
         }
 
         local lemma_info_hstack = LAYOUT.hstack{
@@ -164,7 +169,6 @@ local function lemma_section(entry)
                 BLOCK.indent(2),
                 lemma_info_table,
             }
-
         }
 
         return LAYOUT.vstack{
@@ -190,7 +194,6 @@ end
 local function stem_section(entry)
 
     local contracted_ipa = BLOCK.contracted_stem(entry, "[ipa]")
-
 
     local rows = {
         {
@@ -219,11 +222,8 @@ local function stem_section(entry)
 
     end
 
-
     local stem_info_table = TABLE.make{
-
         rows = rows,
-
         options = {
             padding = 0,
             spacing = 1,
@@ -233,18 +233,15 @@ local function stem_section(entry)
             valign = {"center", "center", "center", "center", "center"},
             style = TABLE.style.light_dim
         }
-
     }
 
     local stem_info_hstack = LAYOUT.hstack{
-
         spacing = 0,
         align = "left",
         children = {
             BLOCK.indent(2),
             stem_info_table,
         }
-
     }
 
     return LAYOUT.vstack{
@@ -357,7 +354,7 @@ local function nominal_paradigm_section(entry)
         end
 
         if S.options.morphology then
-        base = base .. "·"
+            base = base .. "·"
         end
 
         paradigm_formated[case] = {
@@ -379,7 +376,8 @@ local function nominal_paradigm_section(entry)
 
         --TODO add real ipa of forms
         if S.options.paradigm_ipa then
-            local ipa = "[" .. U.assemble_stem(entry.stem.contracted.format.ipa) .. "]"
+            local ipa =
+                "[" .. U.assemble_stem(entry.stem.contracted.format.ipa) .. "]"
 
             singular = singular .. "\n" .. ANSI.dim(ipa)
             generic = generic .. "\n" .. ANSI.dim(ipa)
@@ -461,24 +459,72 @@ local function nominal_paradigm_section(entry)
 
 end
 
---==============================================================================
--- SECTION: Assemble screen and print
---==============================================================================
+--------------------------------------------------------------------------------
+-- LOCAL FUNCTION: Assemble warning section
+--------------------------------------------------------------------------------
 
+local function warning_section(entry)
+
+    return LAYOUT.hstack{
+        spacing = 0,
+        align = "left",
+        children = {
+            BLOCK.indent(2),
+            LAYOUT.text{
+                text = ANSI.red("■ " .. entry.meta.warning),
+                align = "right"
+            }
+        }
+    }
+
+end
+
+--------------------------------------------------------------------------------
+-- LOCAL FUNCTION: Assemble attention section
+--------------------------------------------------------------------------------
+
+local function attention_section(entry)
+
+    return LAYOUT.hstack{
+        spacing = 0,
+        align = "left",
+        children = {
+            BLOCK.indent(2),
+            LAYOUT.text{
+                text = ANSI.yellow("■ " .. entry.meta.attention),
+                align = "right"
+            }
+        }
+    }
+
+end
+
+--------------------------------------------------------------------------------
+-- LOCAL FUNCTION: Assemble note section
+--------------------------------------------------------------------------------
+
+local function note_section(entry)
+
+    return LAYOUT.hstack{
+        spacing = 0,
+        align = "left",
+        children = {
+            BLOCK.indent(2),
+            LAYOUT.text{
+                text = "■ " .. entry.meta.note,
+                align = "right"
+            }
+        }
+    }
+
+end
+
+--==============================================================================
+-- SECTION: public
+--==============================================================================
 
 --++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
--- FUNCTION: TODO
--- PRINT ENTRY (FULL) - TODO make view script
----------------------
-
--- Dumps every key and nested table.
-
--- Accepts either:
---     print_entry_full("fanaheak")
------------------------------------
-
--- or:
---     print_entry_full(entry)
+-- FUNCTION: Assemble screen from sections and print
 --++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 function fullVIEW.print_screen(arg)
@@ -495,9 +541,21 @@ function fullVIEW.print_screen(arg)
     -- Select sections to display
     ----------------------------------------------------------------------------
 
-    local screen_children = {
-        title_section(entry),
-    }
+    local screen_children = {}
+
+    table.insert(screen_children, title_section(entry))
+
+    if entry.meta.warning then
+        table.insert(screen_children, warning_section(entry))
+    end
+
+    if S.options.note and entry.meta.attention then
+        table.insert(screen_children, attention_section(entry))
+    end
+
+    if S.options.note and entry.meta.note then
+        table.insert(screen_children, note_section(entry))
+    end
 
     table.insert(screen_children, BLOCK.empty_screen_line())
     table.insert(screen_children, lemma_section(entry))
@@ -543,6 +601,10 @@ function fullVIEW.print_screen(arg)
             right = true
         }
     }
+
+    ----------------------------------------------------------------------------
+    -- Print screen
+    ----------------------------------------------------------------------------
 
     if S.options.screen_frame then
         print(table.concat(framed_screen.lines, "\n"))

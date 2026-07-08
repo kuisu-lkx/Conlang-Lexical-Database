@@ -1,5 +1,8 @@
+local lfs = require("lfs")
+
 --##############################################################################
 -- SUBSCRIPT: Global shared state
+-- TODO TODO TODO comment properly
 -- TODO TODO TODO split into subscripts: ipa, ortography etc.
 --##############################################################################
 
@@ -13,7 +16,7 @@ S.entries = {}
 
 S.compounds = {}
 
-S.options = {
+S.options = {-- TODO load from file
     status = false,
     translation = false,
     note = false,

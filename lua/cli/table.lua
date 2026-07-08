@@ -3,28 +3,14 @@ local U = require("util")
 local ANSI = require("cli.ansi")
 
 --##############################################################################
--- SUBSCRIPT: Table widget
+-- SUBSCRIPT: Assemble table layout block
 --##############################################################################
---[[
-local TABLE = {}
-
-local function make_separator(kind, style)
-
-local function normalize_cells()
-
-local function column_widths()
-
-local function make_cell()
-
-local function make_row()
-
-local function make_rule()
-
-function TABLE.make()
-
-]]
 
 local TABLE = {}
+
+--==============================================================================
+-- SECTION: Table seperator styles
+--==============================================================================
 
 TABLE.style = {
 
@@ -52,7 +38,7 @@ TABLE.style = {
     },
 
     --==========================================================================
-    -- Unicode light
+    -- Unicode light dim
     --==========================================================================
 
     light_dim = {
@@ -145,63 +131,13 @@ TABLE.style = {
 
 }
 
-local function normalize_options(tbl)
-
-    local options = tbl.options or {}
-
-    options.padding = options.padding or 1
-
-    options.spacing = options.spacing or 3
-
-    options.align = options.align or {}
-    options.valign = options.valign or {}
-
-    options.vertical_after = options.vertical_after or {}
-
-    options.horizontal_after = options.horizontal_after or {}
-
-    options.style = options.style or TABLE.style.light
-
-    options.box = options.box or false
-
-    return options
-
-end
-
 --==============================================================================
 -- SECTION: Helpers
 --==============================================================================
 
-local function make_separator(kind, style)
-
-    local character
-
-    if kind == "vertical" then
-
-        character = style.v
-
-    elseif kind == "cross" then
-
-        character = style.c
-
-    elseif kind == "horizontal" then
-
-        character = style.h
-
-    end
-
-    local separator = LAYOUT.text{
-
-        text = character
-
-    }
-
-    -- Character used when the block is padded vertically
-    separator.fill = character
-
-    return separator
-
-end
+--------------------------------------------------------------------------------
+-- LOCAL FUNCTION: Normalize cells
+--------------------------------------------------------------------------------
 
 local function normalize_cells(rows)
 
@@ -214,35 +150,24 @@ local function normalize_cells(rows)
         for _, cell in ipairs(row) do
 
             if type(cell) == "string" then
-
-                table.insert(
-                    new_row,
-                    LAYOUT.text{
-                        text = cell
-                    }
-                )
-
+                table.insert(new_row, LAYOUT.text{text = cell})
             else
-
-                table.insert(
-                    new_row,
-                    cell
-                )
-
+                table.insert(new_row, cell)
             end
 
         end
 
-        table.insert(
-            normalized,
-            new_row
-        )
+        table.insert(normalized, new_row)
 
     end
 
     return normalized
 
 end
+
+--------------------------------------------------------------------------------
+-- LOCAL FUNCTION: Determine max. column width
+--------------------------------------------------------------------------------
 
 local function column_widths(rows)
 
@@ -251,51 +176,45 @@ local function column_widths(rows)
     for _, row in ipairs(rows) do
 
         for column, cell in ipairs(row) do
-
-            widths[column] = math.max(
-                widths[column] or 0,
-                cell.width
-            )
-
+            widths[column] = math.max(widths[column] or 0, cell.width)
         end
 
     end
-    --print("COLWID")
-    --U.dump_table(widths)
+
     return widths
 
 end
 
+--------------------------------------------------------------------------------
+-- LOCAL FUNCTION: Determine max. row height
+--------------------------------------------------------------------------------
+
 local function row_heights(rows)
 
     local heights = {}
-    --U.dump_table(rows[1])
-    for i, row in ipairs(rows) do
-       --U.dump_table(row)
-        for column, cell in ipairs(row) do
---print("RH:" .. row[column].height)
-            heights[i] = math.max(
-                heights[i] or 0,
-                row[column].height
-            )
 
+    for i, row in ipairs(rows) do
+
+        for column, cell in ipairs(row) do
+            heights[i] = math.max(heights[i] or 0, row[column].height)
         end
 
     end
---print("ROWHGT")
---U.dump_table(heights)
+
     return heights
 
 end
+
+--------------------------------------------------------------------------------
+-- LOCAL FUNCTION: TODO
+--------------------------------------------------------------------------------
 
 local function contains(tbl, value)
 
     for _, v in ipairs(tbl) do
 
         if v == value then
-
             return true
-
         end
 
     end
@@ -308,9 +227,37 @@ end
 -- SECTION: Builders
 --==============================================================================
 
+--------------------------------------------------------------------------------
+-- LOCAL FUNCTION: Make seperator
+--------------------------------------------------------------------------------
+
+local function make_separator(kind, style)
+
+    local character
+
+    if kind == "vertical" then
+        character = style.v
+    elseif kind == "cross" then
+        character = style.c
+    elseif kind == "horizontal" then
+        character = style.h
+    end
+
+    local separator = LAYOUT.text{text = character}
+
+    -- Character used when the block is padded vertically
+    separator.fill = character
+
+    return separator
+
+end
+
+--------------------------------------------------------------------------------
+-- LOCAL FUNCTION: Make cell
+--------------------------------------------------------------------------------
+
 local function make_cell(cell, width, align, height, valign, padding)
---print("MAKECELL")
---print(height)
+
     ---------------------------------------------------
     -- Normalize input
     ---------------------------------------------------
@@ -318,15 +265,10 @@ local function make_cell(cell, width, align, height, valign, padding)
     local content
 
     if type(cell) == "table"
-       and cell.kind == "block"
-    then
-
+    and cell.kind == "block" then
         content = cell
-
     else
-
         content = LAYOUT.text{text = tostring(cell)}
-
     end
 
     ---------------------------------------------------
@@ -338,34 +280,28 @@ local function make_cell(cell, width, align, height, valign, padding)
     ---------------------------------------------------
     -- Vertical padding
     ---------------------------------------------------
---print(valign)
+
     content = LAYOUT.pad_vertical(content, height, valign)
-    --U.dump_table(content)
+
     ---------------------------------------------------
     -- Cell padding TODO ???
     ---------------------------------------------------
-    --print("CONTENT")
-    --print(content.height)
-    --U.dump_table(content.lines)
+
     return LAYOUT.hstack{
-
         spacing = 0,
-
         align = "top",
-
         children = {
-
             LAYOUT.spacer{width = padding},
-
             content,
-
             LAYOUT.spacer{width = padding}
-
         }
-
     }
 
 end
+
+--------------------------------------------------------------------------------
+-- LOCAL FUNCTION: Make row
+--------------------------------------------------------------------------------
 
 local function make_row(row, widths, height, options)
 
@@ -374,17 +310,12 @@ local function make_row(row, widths, height, options)
 
     for column, cell in ipairs(row) do
 
-        --local row_height =
---U.dump_table(height)
---print(options.valign[column])
         ---------------------------------------------------
         -- Cell
         ---------------------------------------------------
 
         table.insert(
-
             children,
-
             make_cell(
                 cell,
                 widths[column],
@@ -403,44 +334,32 @@ local function make_row(row, widths, height, options)
         if column < #row then
 
             if contains(options.vertical_after, column) then
-
                 table.insert(
-
                     children,
-
                     make_separator("vertical", options.style)
-
                 )
-
             else
-
                 table.insert(
-
                     children,
-
                     LAYOUT.spacer{width = options.spacing}
-
                 )
-
             end
 
         end
 
     end
 
-
-
     return LAYOUT.hstack{
-
         spacing = 0,
-
         align = "top",
-
         children = children
-
     }
 
 end
+
+--------------------------------------------------------------------------------
+-- LOCAL FUNCTION: Make rule
+--------------------------------------------------------------------------------
 
 local function make_rule(widths, options)
 
@@ -453,15 +372,13 @@ local function make_rule(widths, options)
         ---------------------------------------------------
 
         table.insert(
-
             children,
-
             LAYOUT.rule{
                 width = width + 2 * options.padding,
                 character = options.style.h
             }
-
         )
+
         ---------------------------------------------------
         -- Crossings
         ---------------------------------------------------
@@ -469,28 +386,18 @@ local function make_rule(widths, options)
         if column < #widths then
 
             if contains(options.vertical_after, column) then
-
                 table.insert(
-
                     children,
-
                     make_separator("cross", options.style)
-
                 )
-
             else
-
                 table.insert(
-
                     children,
-
                     LAYOUT.rule{
                         width = options.spacing,
                         character = options.style.h
                     }
-
                 )
-
             end
 
         end
@@ -501,8 +408,36 @@ local function make_rule(widths, options)
 
 end
 
+--==============================================================================
+-- SECTION: public
+--==============================================================================
+
+--------------------------------------------------------------------------------
+-- LOCAL FUNCTION: Normalize options
+--------------------------------------------------------------------------------
+
+local function normalize_options(tbl)
+
+    local options = tbl.options or {}
+
+    options.padding = options.padding or 1
+    options.spacing = options.spacing or 3
+
+    options.align = options.align or {}
+    options.valign = options.valign or {}
+
+    options.vertical_after = options.vertical_after or {}
+    options.horizontal_after = options.horizontal_after or {}
+
+    options.style = options.style or TABLE.style.light
+    --options.box = options.box or false
+
+    return options
+
+end
+
 --++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
--- FUNCTION: Build table block
+-- FUNCTION: Assemble table block
 --++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 function TABLE.make(tbl)
@@ -531,12 +466,6 @@ function TABLE.make(tbl)
     local out = LAYOUT.vstack{spacing = 0, children = children}
 
     return out
-
-end
-
-function LAYOUT.rule(tbl)
-
-    return LAYOUT.text{text = string.rep(tbl.character or "─", tbl.width or 0)}
 
 end
 

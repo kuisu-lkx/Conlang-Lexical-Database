@@ -156,6 +156,8 @@ function COMPOUND.make_compound(compound)
 
     entry.lemma.head = head.lemma.head
     entry.lemma.head_index = head.lemma.head_index
+    entry.lemma.head.prefix = head.lemma.head.prefix
+    entry.lemma.head.suffix = head.lemma.head.suffix
     entry.lemma.modifier = {}
     entry.lemma.modifier.key = modifier.lemma.head.key
     entry.lemma.modifier.index = modifier.lemma.head.index

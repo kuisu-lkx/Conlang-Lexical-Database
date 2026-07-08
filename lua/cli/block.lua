@@ -4,86 +4,49 @@ local ANSI = require("cli.ansi")
 local LAYOUT = require("cli.layout")
 local TABLE = require("cli.table")
 
-
-local unicode = require("unicode")
-
 --##############################################################################
--- SUBSCRIPT: CLI formatter for full view
+-- SUBSCRIPT: Layout block library
+-- TODO comment functions
 --##############################################################################
 
 local BLOCK = {}
 
-local roman = {
-    "I",
-    "II",
-    "III",
-    "IV",
-    "V",
-    "VI",
-    "VII",
-    "IIX", -- TODO "VIII" ?
-    "IX",
-    "X",
-}
+--==============================================================================
+-- SECTION: Spacer blocks
+--==============================================================================
 
---------------------------------------------------------------------------------
--- LOCAL FUNCTION: Format status string
---------------------------------------------------------------------------------
+--++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+-- FUNCTION: Assemble empty line block
+--++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-function BLOCK.status(entry)
+function BLOCK.empty_screen_line(width)
 
-    local options = S.options
-
-
-
-    if not entry.meta.status then
-        return LAYOUT.text{text = "", align = "center"}
-    end
-
-    local out = ""
-
-    out = "⟪" .. entry.meta.status .. "⟫"
-
-    if options.color then
-
-        if entry.meta.status == "canon" then
-            out = out
-        elseif entry.meta.status == "deprecated" then
-            out = ANSI.red(out)
-        elseif entry.meta.status == "draft" then
-            out = ANSI.yellow(out)
-        elseif entry.meta.status == "review" then
-            out = ANSI.magenta(out)
-        elseif entry.meta.status == "good" then
-            out = ANSI.green(out)
-        elseif entry.meta.status == "new" then
-            out = ANSI.blue(out)
-        else
-            out = ANSI.orange(out)
-        end
-
-    else
-        out = ANSI.bold(out)
-    end
-
-    return LAYOUT.text{text = out, align = "center"}
-
-end
-
-function BLOCK.empty_screen_line()
+    width = width or 76
 
     return LAYOUT.text{
-        text = string.rep(" ", 76), -- allow for frame + padding
+        text = string.rep(" ", width), -- allow for frame + padding
         align = "center"
     }
 
 end
+
+--++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+-- FUNCTION: Assemble indent block
+--++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 function BLOCK.indent(width)
 
     return LAYOUT.text{text = string.rep(" ", width), align = "center"}
 
 end
+
+--==============================================================================
+-- SECTION: Stem form blocks
+--==============================================================================
+
+--++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+-- FUNCTION: Assemble contracted stem block
+--++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 function BLOCK.contracted_stem(entry, format)
 
@@ -148,9 +111,9 @@ function BLOCK.contracted_stem(entry, format)
 
 end
 
-
-
-
+--++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+-- FUNCTION: Assemble expanded stem block
+--++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 function BLOCK.expanded_stem(entry, format, no_abbr)
 
@@ -232,34 +195,86 @@ function BLOCK.expanded_stem(entry, format, no_abbr)
 
     if format == "text" then
         out = out
-
     elseif format == "ipa" then
         out = ANSI.dim(out)
-
     elseif format == "[ipa" then
         out = ANSI.dim("[" .. out)
-
     elseif format == "ipa]" then
         out = ANSI.dim(out .. "]")
-
     elseif format == "[ipa]" then
         out = ANSI.dim("[" .. out .. "]")
-
     end
 
-    return LAYOUT.text{
-
-        text = out,
-        align = "center"
-
-    }
+    return LAYOUT.text{text = out, align = "center"}
 
 end
 
+--==============================================================================
+-- SECTION: Metadata blocks
+--==============================================================================
 
+--++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+-- FUNCTION: Assemble status block
+--++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
+function BLOCK.status(entry)
 
+    local options = S.options
 
+    if not entry.meta.status then
+        return LAYOUT.text{text = "", align = "center"}
+    end
+
+    local out = ""
+
+    out = "⟪" .. entry.meta.status .. "⟫"
+
+    if options.color then
+
+        if entry.meta.status == "canon" then
+            out = out
+        elseif entry.meta.status == "deprecated" then
+            out = ANSI.red(out)
+        elseif entry.meta.status == "draft" then
+            out = ANSI.yellow(out)
+        elseif entry.meta.status == "review" then
+            out = ANSI.magenta(out)
+        elseif entry.meta.status == "good" then
+            out = ANSI.green(out)
+        elseif entry.meta.status == "new" then
+            out = ANSI.blue(out)
+        else
+            out = ANSI.orange(out)
+        end
+
+    else
+        out = ANSI.bold(out)
+    end
+
+    return LAYOUT.text{text = out, align = "center"}
+
+end
+
+--==============================================================================
+-- SECTION: Other blocks
+--==============================================================================
+
+local roman = {
+    "I",
+    "II",
+    "III",
+    "IV",
+    "V",
+    "VI",
+    "VII",
+    "IIX", -- TODO "VIII" ?
+    "IX",
+    "X",
+}
+
+--++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+-- FUNCTION: Assemble translation block
+--++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 function BLOCK.translation(entry, width)
 
@@ -271,9 +286,8 @@ function BLOCK.translation(entry, width)
 
     for class_index, class in ipairs(entry.classes) do
 
-        --table.insert(out, "       ")
-
-        --if multiple_classes then -- <- uncomment to not display class numerals if only one class
+        --if multiple_classes then -- <- uncomment to not display
+                                   --    class numerals if only one class
         table.insert(out, ANSI.bold(roman[class_index] .. ". "))
         --end
 
@@ -286,7 +300,9 @@ function BLOCK.translation(entry, width)
         for group_index, group in ipairs(class.groups) do
 
             if multiple_groups then
-                table.insert(out, ANSI.bold(string.format("%d. ", group_index)))
+                table.insert(
+                    out, ANSI.bold(string.format("%d. ", group_index))
+                )
             end
 
             if group.info ~= "" then
@@ -296,13 +312,17 @@ function BLOCK.translation(entry, width)
             for translation_index, translation in ipairs(group.translations) do
 
                 if translation.before ~= "" then
-                    table.insert(out, ANSI.italic_dim(translation.before .. " "))
+                    table.insert(
+                        out, ANSI.italic_dim(translation.before .. " ")
+                    )
                 end
 
                 table.insert(out, translation.text)
 
                 if translation.after ~= "" then
-                    table.insert(out, ANSI.italic_dim(" " .. translation.after))
+                    table.insert(
+                        out, ANSI.italic_dim(" " .. translation.after)
+                    )
                 end
 
                 if translation_index < #group.translations then
@@ -321,14 +341,12 @@ function BLOCK.translation(entry, width)
 
     end
 
-
     return LAYOUT.text_wrapped{
         text = table.concat(out),
         width = width
     }
 
 end
-
 
 --##############################################################################
 -- RETURN

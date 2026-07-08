@@ -7,6 +7,14 @@ local ANSI = require("cli.ansi")
 
 local LAYOUT = {}
 
+--==============================================================================
+-- SECTION: Layout support functions
+--==============================================================================
+
+--++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+-- FUNCTION: Determine visible string length
+--++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
 function LAYOUT.visible_length(text)
 
     -- ANSI
@@ -16,6 +24,7 @@ function LAYOUT.visible_length(text)
 
     for _, codepoint in utf8.codes(text) do
         --remove unicode combining characters from count
+        --TODO replace with local function below and make global
         if not (codepoint >= 0x0300 and codepoint <= 0x036F) then
             length = length + 1
         end
@@ -26,7 +35,13 @@ function LAYOUT.visible_length(text)
 
 end
 
+--==============================================================================
+-- SECTION: Layout primitives
+--==============================================================================
 
+--------------------------------------------------------------------------------
+-- LOCAL FUNCTION: Line Padding
+--------------------------------------------------------------------------------
 
 local function pad_line(line, width, mode)
 
@@ -37,23 +52,23 @@ local function pad_line(line, width, mode)
     end
 
     if mode == "right" then
-
         return string.rep(" ", diff) .. line
 
     elseif mode == "center" then
-
         local left = math.floor(diff / 2)
         local right = diff - left
-
         return string.rep(" ", left) .. line .. string.rep(" ", right)
 
     else
-
         return line .. string.rep(" ", diff)
 
     end
 
 end
+
+--------------------------------------------------------------------------------
+-- LOCAL FUNCTION: Layout block primitive
+--------------------------------------------------------------------------------
 
 local function block(lines)
 
@@ -77,7 +92,9 @@ local function block(lines)
 
 end
 
-
+--++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+-- FUNCTION: Horizontal padding
+--++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 function LAYOUT.pad_horizontal(block, width, align)
 
@@ -88,9 +105,7 @@ function LAYOUT.pad_horizontal(block, width, align)
     ---------------------------------------------------
 
     if block.width >= width then
-
         return block
-
     end
 
     ---------------------------------------------------
@@ -127,17 +142,18 @@ function LAYOUT.pad_horizontal(block, width, align)
 
 end
 
+--++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+-- FUNCTION: Vertical padding
+--++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
 function LAYOUT.pad_vertical(child, height, valign)
---U.dump_table(tbl.child)
-    --local child  = block
-    --local height = tbl.height
-    --align  = align or "center"
+
     local fill   = " "--tbl.fill or " "
---print("AAAAAAAA" .. align)
+
     ---------------------------------------------------
     -- Already correct height
     ---------------------------------------------------
---print(child.height .. " / " .. height)
+
     if child.height >= height then
         return child
     end
@@ -146,20 +162,14 @@ function LAYOUT.pad_vertical(child, height, valign)
 
     local top = 0
     local bottom = 0
---print("VALIGN:" .. valign)
+
     if valign == "bottom" then
-
         top = diff
-
     elseif valign == "center" then
-
         top = math.floor(diff / 2)
         bottom = diff - top
-
     else -- "top"
-
         bottom = diff
-
     end
 
     ---------------------------------------------------
@@ -170,42 +180,26 @@ function LAYOUT.pad_vertical(child, height, valign)
 
     -- top padding
     for _ = 1, top do
-
-        table.insert(
-
-            lines,
-
-            string.rep(fill, child.width)
-
-        )
-
+        table.insert(lines, string.rep(fill, child.width))
     end
 
     -- content
     for _, line in ipairs(child.lines) do
-
         table.insert(lines, line)
-
     end
 
     -- bottom padding
     for _ = 1, bottom do
-
-        table.insert(
-
-            lines,
-
-            string.rep(fill, child.width)
-
-        )
-
+        table.insert(lines, string.rep(fill, child.width))
     end
---U.dump_table(lines)
+
     return block(lines)
 
 end
 
-
+--++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+-- FUNCTION: Frame padding
+--++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 function LAYOUT.pad_frame(tbl)
 
@@ -227,15 +221,7 @@ function LAYOUT.pad_frame(tbl)
     ---------------------------------------------------
 
     for _ = 1, top do
-
-        table.insert(
-
-            lines,
-
-            string.rep(fill, width)
-
-        )
-
+        table.insert(lines, string.rep(fill, width))
     end
 
     ---------------------------------------------------
@@ -243,17 +229,10 @@ function LAYOUT.pad_frame(tbl)
     ---------------------------------------------------
 
     for _, line in ipairs(child.lines) do
-
         table.insert(
-
             lines,
-
-            string.rep(fill, left)
-            .. line ..
-            string.rep(fill, right)
-
+            string.rep(fill, left) .. line .. string.rep(fill, right)
         )
-
     end
 
     ---------------------------------------------------
@@ -261,20 +240,16 @@ function LAYOUT.pad_frame(tbl)
     ---------------------------------------------------
 
     for _ = 1, bottom do
-
-        table.insert(
-
-            lines,
-
-            string.rep(fill, width)
-
-        )
-
+        table.insert(lines, string.rep(fill, width))
     end
 
     return block(lines)
 
 end
+
+--++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+-- FUNCTION: Frame
+--++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 function LAYOUT.frame(tbl)
 
@@ -287,12 +262,10 @@ function LAYOUT.frame(tbl)
     local vpadding = tbl.vpadding or 0
 
     local sides = tbl.sides or {
-
         top = true,
         bottom = true,
         left = true,
         right = true
-
     }
 
     ---------------------------------------------------
@@ -301,16 +274,13 @@ function LAYOUT.frame(tbl)
 
     if hpadding > 0
     or vpadding > 0 then
---U.dump_table(child)
+
         child = LAYOUT.pad_frame{
-
             child = child,
-
             left = hpadding,
             right = hpadding,
             top = vpadding,
             bottom = vpadding
-
         }
 
     end
@@ -330,23 +300,13 @@ function LAYOUT.frame(tbl)
         local line = ""
 
         if sides.left then
-
             line = line .. style.tl
-
         end
 
-        line = line .. string.rep(
-
-            style.h,
-
-            child.width
-
-        )
+        line = line .. string.rep(style.h, child.width)
 
         if sides.right then
-
             line = line .. style.tr
-
         end
 
         table.insert(lines, line)
@@ -362,17 +322,13 @@ function LAYOUT.frame(tbl)
         local line = ""
 
         if sides.left then
-
             line = line .. style.v
-
         end
 
         line = line .. row
 
         if sides.right then
-
             line = line .. style.v
-
         end
 
         table.insert(lines, line)
@@ -388,23 +344,13 @@ function LAYOUT.frame(tbl)
         local line = ""
 
         if sides.left then
-
             line = line .. style.bl
-
         end
 
-        line = line .. string.rep(
-
-            style.h,
-
-            child.width
-
-        )
+        line = line .. string.rep(style.h, child.width)
 
         if sides.right then
-
             line = line .. style.br
-
         end
 
         table.insert(lines, line)
@@ -415,34 +361,64 @@ function LAYOUT.frame(tbl)
 
 end
 
-
+--++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+-- FUNCTION: Text
+--++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 function LAYOUT.text(tbl)
---print(tbl.text)
+
     local text = tbl.text or ""
 
     local lines = {}
 
     -- Split multiline text
     for line in (text .. "\n"):gmatch("(.-)\n") do
-
         table.insert(lines, line)
-
     end
 
     return block(lines)
 
 end
 
+--++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+-- FUNCTION: Spacer
+--++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
+function LAYOUT.spacer(tbl)
 
+    local width  = tbl.width  or 0
+    local height = tbl.height or 1
+
+    local lines = {}
+
+    for _ = 1, height do
+        table.insert(lines, string.rep(" ", width))
+    end
+
+    return block(lines)
+
+end
+
+--++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+-- FUNCTION: Rule
+--++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+function LAYOUT.rule(tbl)
+
+    local width = tbl.width or 0
+
+    local character = tbl.character or "─"
+
+    return block{string.rep(character, width)}
+
+end
 
 --==============================================================================
 -- SECTION: Fixed width text blocks
 --==============================================================================
 
 --------------------------------------------------------------------------------
--- LOCAL FUNCTION: Tokenizer
+-- LOCAL FUNCTION: Test for combining unicode characters
 --------------------------------------------------------------------------------
 
 local function is_combining_mark(cp)
@@ -556,12 +532,11 @@ local function next_token(text, pos)
 
 end
 
---++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
--- FUNCTION: Wrap string at fixed width
---++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+--------------------------------------------------------------------------------
+-- LOCAL FUNCTION: Wrap string at fixed width
+--------------------------------------------------------------------------------
 
-
-function LAYOUT.wrap_text(text, width)
+local function wrap_text(text, width)
 
     local out = {}
 
@@ -707,49 +682,24 @@ function LAYOUT.wrap_text(text, width)
 end
 
 --++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
--- FUNCTION: Make fixed width text block
+-- FUNCTION: Fixed width text
 --++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 function LAYOUT.text_wrapped(tbl)
 
-    local wrapped = LAYOUT.wrap_text(tbl.text or "", tbl.width)
+    local wrapped = wrap_text(tbl.text or "", tbl.width)
 
     return LAYOUT.text{text = wrapped}
 
 end
 
+--==============================================================================
+-- SECTION: Stacking functions
+--==============================================================================
 
-
-
-
-
-
-function LAYOUT.spacer(tbl)
-
-    local width  = tbl.width  or 0
-    local height = tbl.height or 1
-
-    local lines = {}
-
-    for _ = 1, height do
-        table.insert(lines, string.rep(" ", width))
-    end
-
-    return block(lines)
-
-end
-
-function LAYOUT.rule(tbl)
-
-    local width = tbl.width or 0
-
-    local character = tbl.character or "─"
-
-    return block{string.rep(character, width)}
-
-end
-
-
+--++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+-- FUNCTION: Stack horizontally
+--++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 function LAYOUT.hstack(tbl)
 
@@ -842,6 +792,10 @@ function LAYOUT.hstack(tbl)
 
 end
 
+--++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+-- FUNCTION: Stack vertically
+--++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
 function LAYOUT.vstack(tbl)
 
     local children = tbl.children or {}
@@ -885,7 +839,6 @@ function LAYOUT.vstack(tbl)
     return block(lines)
 
 end
-
 
 --##############################################################################
 -- RETURN
