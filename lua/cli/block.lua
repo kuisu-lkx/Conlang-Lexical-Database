@@ -42,7 +42,7 @@ function BLOCK.status(entry)
 
     local out = ""
 
-    out = " ⟪" .. entry.meta.status .. "⟫"
+    out = "⟪" .. entry.meta.status .. "⟫"
 
     if options.color then
 
@@ -81,10 +81,7 @@ end
 
 function BLOCK.indent(width)
 
-    return LAYOUT.text{
-        text = string.rep(" ", width),
-        align = "center"
-    }
+    return LAYOUT.text{text = string.rep(" ", width), align = "center"}
 
 end
 
@@ -96,10 +93,8 @@ function BLOCK.contracted_stem(entry, format)
 
         if format == "text" then
             return ""
-
         elseif format == "ipa" then
             return ANSI.dim(" [" .. out)-- TODO ???
-
         end
 
     end
@@ -110,14 +105,11 @@ function BLOCK.contracted_stem(entry, format)
 
         if options.morphology then
             stem_contracted = entry.stem.contracted.format.morphology
-
         else
             stem_contracted = entry.stem.contracted.format.unicode
-
         end
 
-    elseif format == "ipa"
-    or format == "ipa_br" then
+    elseif format:match("ipa") then
         stem_contracted = entry.stem.contracted.format.ipa
 
     end
@@ -130,13 +122,10 @@ function BLOCK.contracted_stem(entry, format)
 
             if entry.stem.class:match("^v") then
                 out = ANSI.bold_yellow(out)
-
             elseif entry.stem.class:match("^n") then
                 out = ANSI.bold_blue(out)
-
             else
                 out = ANSI.bold(out)
-
             end
 
         else
@@ -146,17 +135,16 @@ function BLOCK.contracted_stem(entry, format)
 
     elseif format == "ipa" then
         out = ANSI.dim(out)
-    elseif format == "ipa_br" then
+    elseif format == "[ipa" then
+        out = ANSI.dim("[" .. out)
+    elseif format == "ipa]" then
+        out = ANSI.dim(out .. "]")
+    elseif format == "[ipa]" then
         out = ANSI.dim("[" .. out .. "]")
 
     end
 
-    return LAYOUT.text{
-
-        text = out,
-        align = "center"
-
-    }
+    return LAYOUT.text{text = out, align = "center"}
 
 end
 
@@ -180,20 +168,16 @@ function BLOCK.expanded_stem(entry, format, no_abbr)
 
             if entry.stem.class:match("^n") then
                 return "–"
-
             else
                 return ""
-
             end
 
-        elseif format == "ipa" then
+        elseif format == "ipa" then-- TODO ???
 
             if entry.stem.class:match("^n") then
                 return ANSI.dim("–")
-
             else
                 return ANSI.dim("")
-
             end
 
         end
@@ -206,14 +190,11 @@ function BLOCK.expanded_stem(entry, format, no_abbr)
 
         if options.morphology then
             stem_expanded = entry.stem.expanded.format.morphology
-
         else
             stem_expanded = entry.stem.expanded.format.unicode
-
         end
 
-    elseif format == "ipa"
-    or format == "ipa_br" then
+    elseif format:match("ipa") then
         stem_expanded = entry.stem.expanded.format.ipa
 
     end
@@ -233,15 +214,12 @@ function BLOCK.expanded_stem(entry, format, no_abbr)
 
             if options.abbreviated then
                 out = out .. "~"
-
             else
 
                 if stem_expanded.modifier then
                     out = out .. stem_expanded.modifier .. stem_expanded.before
-
                 else
                     out = out .. stem_expanded.before
-
                 end
 
             end
@@ -258,7 +236,13 @@ function BLOCK.expanded_stem(entry, format, no_abbr)
     elseif format == "ipa" then
         out = ANSI.dim(out)
 
-    elseif format == "ipa_br" then
+    elseif format == "[ipa" then
+        out = ANSI.dim("[" .. out)
+
+    elseif format == "ipa]" then
+        out = ANSI.dim(out .. "]")
+
+    elseif format == "[ipa]" then
         out = ANSI.dim("[" .. out .. "]")
 
     end

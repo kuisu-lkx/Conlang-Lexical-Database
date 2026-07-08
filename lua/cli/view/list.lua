@@ -1,6 +1,8 @@
 local S = require("state")
 local U = require("util")
 local ANSI = require("cli.ansi")
+local LAYOUT = require("cli.layout")
+local TABLE = require("cli.table")
 local BLOCK = require("cli.block")
 
 --##############################################################################
@@ -9,332 +11,136 @@ local BLOCK = require("cli.block")
 
 local listVIEW = {}
 
---==============================================================================
--- SECTION: Local variables
---==============================================================================
-
-local roman = {
-    "I",
-    "II",
-    "III",
-    "IV",
-    "V",
-    "VI",
-    "VII",
-    "IIX", -- TODO "VIII" ?
-    "IX",
-    "X",
-}
-
---==============================================================================
--- SECTION: String formatters
---==============================================================================
-
 --------------------------------------------------------------------------------
--- LOCAL FUNCTION: Format contracted stem string TODO use block
+-- LOCAL FUNCTION: Assemble word section
 --------------------------------------------------------------------------------
 
-local function contracted_stem(entry, format, options)
+local function word_section(entry)
 
-    if not entry.stem.contracted then
+    local word_section_children = {}
 
-        if format == "text" then
-            return ""
+    table.insert(
+        word_section_children,
+        LAYOUT.text{text = ANSI.bold("◆ "), align = "right"}
+    )
 
-        elseif format == "ipa" then
-            return ANSI.dim(" [" .. out)
+    table.insert(
+        word_section_children,
+        BLOCK.contracted_stem(entry, "text")
+    )
 
-        end
-
+    if entry.stem.expanded then
+        table.insert(
+            word_section_children,
+            BLOCK.expanded_stem(entry, "text")
+        )
     end
 
-    local stem_contracted = {}
-
-    if format == "text" then
-
-        if options.morphology then
-            stem_contracted = entry.stem.contracted.format.morphology
-
-        else
-            stem_contracted = entry.stem.contracted.format.unicode
-
-        end
-
-    elseif format == "ipa" then
-        stem_contracted = entry.stem.contracted.format.ipa
-
-    end
-
-    local out = U.assemble_stem(stem_contracted)
-
-    if format == "text" then
-
-        if options.color then
-
-            if entry.stem.class:match("^v") then
-                out = ANSI.bold_yellow(out)
-
-            elseif entry.stem.class:match("^n") then
-                out = ANSI.bold_blue(out)
-
-            else
-                out = ANSI.bold(out)
-
-            end
-
-        else
-            out = ANSI.bold(out)
-
-        end
-
-    elseif format == "ipa" then
-        out = ANSI.dim(" [" .. out)
-
-    end
-
-    return out
-
-end
-
---------------------------------------------------------------------------------
--- LOCAL FUNCTION: Format expanded stem string TODO use block
---------------------------------------------------------------------------------
-
-local function expanded_stem(entry, format, options)
-
-    if not entry.stem.expanded then
-
-        if format == "text" then
-
-            if entry.stem.class:match("^n") then
-                return " –"
-
-            else
-                return ""
-
-            end
-
-        elseif format == "ipa" then
-
-            if entry.stem.class:match("^n") then
-                return ANSI.dim(" –]")
-
-            else
-                return ANSI.dim("]")
-
-            end
-
-        end
-
-    end
-
-    local stem_expanded = {}
-
-    if format == "text" then
-
-        if options.morphology then
-            stem_expanded = entry.stem.expanded.format.morphology
-
-        else
-            stem_expanded = entry.stem.expanded.format.unicode
-
-        end
-
-    elseif format == "ipa" then
-        stem_expanded = entry.stem.expanded.format.ipa
-
-    end
-
-    local out = ""
-
-    if U.assemble_stem(entry.stem.contracted.format.unicode) ==
-        U.assemble_stem(entry.stem.expanded.format.unicode)
-    and options.abbreviated then
-
-        out = "~"
-
+    if entry.stem.expanded then
+        table.insert(
+            word_section_children,
+            BLOCK.contracted_stem(entry, "[ipa")
+        )
+        table.insert(
+            word_section_children,
+            BLOCK.expanded_stem(entry, "ipa]")
+        )
     else
-
-        if stem_expanded.before ~= ""
-        or (stem_expanded.modifier and stem_expanded.modifier ~= "") then
-
-            if options.abbreviated then
-                out = out .. "~"
-
-            else
-
-                if stem_expanded.modifier then
-                    out = out .. stem_expanded.modifier .. stem_expanded.before
-
-                else
-                    out = out .. stem_expanded.before
-
-                end
-
-            end
-
-        end
-
-        out = out .. stem_expanded.main .. stem_expanded.after
-
+        table.insert(
+            word_section_children,
+            BLOCK.contracted_stem(entry, "[ipa]")
+        )
     end
 
-    if format == "text" then
-        out = " " .. out
+    table.insert(
+        word_section_children,
+        LAYOUT.text{text = ANSI.bold(entry.stem.class), align = "right"}
+    )
 
-    elseif format == "ipa" then
-        out = " " .. ANSI.dim(out .. "]")
-
+    if S.options.status then
+        table.insert(
+            word_section_children,
+            LAYOUT.text{text = "  ■", align = "right"}
+        )
+        table.insert(
+            word_section_children,
+            BLOCK.status(entry)
+        )
     end
 
-    return out
+    if S.options.note and entry.meta.note then
+        table.insert(
+            word_section_children,
+            LAYOUT.text{text = "  ■", align = "right"}
+        )
+        table.insert(
+            word_section_children,
+            LAYOUT.text{text = ANSI.dim("(has notes)"), align = "right"}
+        )
+    end
+
+    return LAYOUT.hstack{
+        spacing = 1,
+        align = "left",
+        children = word_section_children
+    }
 
 end
 
 --------------------------------------------------------------------------------
--- LOCAL FUNCTION: Format status string TODO use BLOCK!
+-- LOCAL FUNCTION: Assemble translation section
 --------------------------------------------------------------------------------
 
-local function status(entry, options)
-
-    if options.status then
-
-        if not entry.meta.status then
-            return ""
-        end
-
-        local out = ""
-
-        out = " ⟪" .. entry.meta.status .. "⟫"
-
-        if options.color then
-
-            if entry.meta.status == "canon" then
-                out = out
-
-            elseif entry.meta.status == "deprecated" then
-                out = ANSI.red(out)
-
-            elseif entry.meta.status == "draft" then
-                out = ANSI.yellow(out)
-
-            elseif entry.meta.status == "review" then
-                out = ANSI.magenta(out)
-
-            elseif entry.meta.status == "good" then
-                out = ANSI.green(out)
-
-            elseif entry.meta.status == "new" then
-                out = ANSI.blue(out)
-
-            else
-                out = ANSI.orange(out)
-
-            end
-
-        else
-            out = ANSI.bold(out)
-
-        end
-
-        return out
-
-    else
-
-        return ""
-
-    end
-
+local function translations_section(entry)
+    return LAYOUT.hstack{
+        spacing = 0,
+        align = "left",
+        children = {
+            BLOCK.indent(3),
+            BLOCK.translation(entry, 73)
+        }
+    }
 end
 
 --------------------------------------------------------------------------------
--- LOCAL FUNCTION: Format translations string TODO use BLOCK!
+-- LOCAL FUNCTION: Assemble warning section
 --------------------------------------------------------------------------------
 
-function listVIEW.translations_string(entry)
+local function warning_section(entry)
+    return LAYOUT.hstack{
+        spacing = 0,
+        align = "left",
+        children = {
+            BLOCK.indent(3),
+            LAYOUT.text{
+                text = ANSI.red("■ " .. entry.meta.warning),
+                align = "right"
+            }
+        }
+    }
+end
 
-    local out = {}
+--------------------------------------------------------------------------------
+-- LOCAL FUNCTION: Assemble attention section
+--------------------------------------------------------------------------------
 
-    local multiple_classes = #entry.classes > 1
-
-    for class_index, class in ipairs(entry.classes) do
-
-        table.insert(out, "       ")
-
-        --if multiple_classes then -- <- uncomment to not display class numerals if only one class
-        table.insert(out, ANSI.bold(roman[class_index] .. ". "))
-        --end
-
-        if class.type ~= "" then
-            table.insert(out, class.type .. ": ")
-        end
-
-        local multiple_groups = #class.groups > 1
-
-        for group_index, group in ipairs(class.groups) do
-
-            if multiple_groups then
-                table.insert(out, ANSI.bold(string.format("%d. ", group_index)))
-            end
-
-            if group.info ~= "" then
-                table.insert(out, ANSI.dim("[" .. group.info .. "] "))
-            end
-
-            for translation_index, translation in ipairs(group.translations) do
-
-                if translation.before ~= "" then
-                    table.insert(out, ANSI.italic_dim(translation.before .. " "))
-                end
-
-                table.insert(out, translation.text)
-
-                if translation.after ~= "" then
-                    table.insert(out, ANSI.italic_dim(" " .. translation.after))
-                end
-
-                if translation_index < #group.translations then
-                    table.insert(out, ", ")
-                else
-                    table.insert(out, ". ")
-                end
-
-            end
-
-        end
-
-        if class_index < #entry.classes then
-            table.insert(out, "\n")
-        end
-
-    end
-U.dump_table(out)
-
-    return table.concat(out)
-
+local function attention_section(entry)
+    return LAYOUT.hstack{
+        spacing = 0,
+        align = "left",
+        children = {
+            BLOCK.indent(3),
+            LAYOUT.text{
+                text = ANSI.yellow("■ " .. entry.meta.attention),
+                align = "right"
+            }
+        }
+    }
 end
 
 --==============================================================================
 -- SECTION: Public Functions
 --==============================================================================
-
---++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
--- FUNCTION: Print translations only in list view
---++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-
-function listVIEW.print_translations(arg)
-
-    local entry
-
-    if type(arg) == "table" then
-        entry = arg
-    else
-        entry = U.find_stem(arg)
-    end
-
-    print(translations_string(entry))
-
-end
 
 --++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 -- FUNCTION: Print entry in list view
@@ -346,72 +152,126 @@ end
 --     print_entry(entry, options)
 --++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-function listVIEW.print_entry(arg)
+local function entry_section(entry)
 
-    local entry
-    local options = S.options
+    ----------------------------------------------------------------------------
+    -- Select sections to display
+    ----------------------------------------------------------------------------
 
-    if type(arg) == "table" then
-        entry = arg
-    else
-        entry = U.find_stem(arg)
-    end
+    local entry_children = {}
 
-    local out = ""
+    table.insert(entry_children, BLOCK.empty_screen_line())
 
-    if not options.dense then
-        out = out .. "\n"
-    end
+    table.insert(entry_children, word_section(entry))
 
-    out = out
-        .. ANSI.bold("◆ ")
-        .. contracted_stem(entry, "text", options)
-        .. expanded_stem(entry, "text", options)
-        .. contracted_stem(entry, "ipa", options)
-        .. expanded_stem(entry, "ipa", options)
-        .. status(entry, options)
+    if S.options.translation then
 
-    if entry.stem.class ~= "" then
-        out = out .. " " .. entry.stem.class
-    end
-
-    if options.notes
-    and entry.meta.notes then
-        out = out .. " ■ " .. ANSI.dim("(has note)")
-    end
-
-    if options.translation then
-        out = out .. ":\n" .. listVIEW.translations_string(entry)
+        table.insert(entry_children, translations_section(entry))
     end
 
     if entry.meta.warning then
-        out = out .. "\n      " .. ANSI.red(" ■ " .. entry.meta.warning)
+        table.insert(entry_children, warning_section(entry))
+
     end
 
-    if options.notes
-    and entry.meta.attention then
-        out = out .. "\n      " .. ANSI.yellow(" ■ " .. entry.meta.attention)
+    if S.options.note and entry.meta.attention then
+        table.insert(entry_children, attention_section(entry))
     end
 
-    if options.citations then -- TODO
-        out = out
-        .. "\n      "
+    if not S.options.dense then
+        table.insert(entry_children, BLOCK.empty_screen_line())
+    end
+
+    if S.options.citations then -- TODO
+        --out = out
+        --.. "\n      "
         --.. " ■ citations:"
         --.. " ※ " text, page ...
     end
 
-    if options.changelog then -- TODO
-        out = out
-        .. "\n      "
-        .. " ■ " .. ANSI.dim("date edited: ") .. entry.meta.date_edited
-        .. " / " .. ANSI.dim("date added: ") .. entry.meta.date_added
+    if S.options.changelog then -- TODO
+        --out = out
+        --.. "\n      "
+        --.. " ■ " .. ANSI.dim("date edited: ") .. entry.meta.date_edited
+        --.. " / " .. ANSI.dim("date added: ") .. entry.meta.date_added
         --.. "\n       ◇ " date: change
+    end
+
+    ----------------------------------------------------------------------------
+    -- Stack sections vertically
+    ----------------------------------------------------------------------------
+
+    return LAYOUT.vstack{
+        spacing = 0,
+        align = "left",
+        children = entry_children
+    }
+
+end
+
+function listVIEW.print_screen(argv)
+
+    local screen_children = {}
+
+    local entry
+
+    if argv[2] == ":all" then
+
+        for _, entry in ipairs(S.entries) do
+            table.insert(screen_children, entry_section(entry))
+        end
+
+    else
+
+        for i = 2, #argv do
+
+            if type(argv[i]) == "table" then
+                entry = arg
+            else
+                entry = U.find_stem(argv[i])
+            end
+
+            table.insert(screen_children, entry_section(entry))
+
+        end
 
     end
 
-    -- TODO display parents and siblings (via lemma-search)
 
-    print(out)
+
+
+    ----------------------------------------------------------------------------
+    -- Stack sections vertically
+    ----------------------------------------------------------------------------
+
+    local screen = LAYOUT.vstack{
+        spacing = 0,
+        align = "left",
+        children = screen_children
+    }
+
+    ----------------------------------------------------------------------------
+    -- Add screen frame
+    ----------------------------------------------------------------------------
+
+    local framed_screen = LAYOUT.frame{
+        child = screen,
+        style = TABLE.style.double,
+        hpadding = 1,
+        vpadding = 0,
+        sides = {
+            top = true,
+            bottom = true,
+            left = true,
+            right = true
+        }
+    }
+
+    if S.options.screen_frame then
+        print(table.concat(framed_screen.lines, "\n"))
+    else
+        print(table.concat(screen.lines, "\n"))
+    end
 
 end
 

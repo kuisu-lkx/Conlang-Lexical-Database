@@ -410,7 +410,7 @@ end
 --call like: U.search_entries(extractor, "ma*")
 
 --++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
--- FUNCTION: Find stem and return the entry
+-- FUNCTION: Find stem and return the entry TODO use U.find_lemma()
 --++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 function U.find_stem(stem, index)
@@ -420,7 +420,7 @@ function U.find_stem(stem, index)
     for _, entry in ipairs(S.entries) do
 
         if U.assemble_stem(entry.stem.contracted.format.unicode) == stem
-        and entry.lemma.head_index == index
+        and entry.lemma.head.index == index
         then
             return entry
         end
@@ -433,6 +433,32 @@ function U.find_stem(stem, index)
     )
 
 end
+
+function U.find_lemma(key, index, prefix, suffix)
+
+    index = index or 0
+    prefix = prefix or ""
+    suffix = suffix or ""
+
+    for _, entry in ipairs(S.entries) do
+
+        if entry.lemma.head.key == key
+        and entry.lemma.head.index == index
+        and entry.lemma.head.prefix == prefix
+        and entry.lemma.head.suffix == suffix
+        then
+            return entry
+        end
+
+    end
+
+    error(
+        ("No lemma found: %s (%d)")
+        :format(key, index)
+    )
+
+end
+
 
 --##############################################################################
 -- RETURN

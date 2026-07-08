@@ -43,10 +43,10 @@ local function make_contractedstem(entry)
     ----------------------------------------------------------------------------
 
     WORD.build_word(
-        entry.lemma.head,
+        entry.lemma.head.key,
         entry.stem.contracted,
-        entry.affix.prefix,
-        entry.affix.suffix,
+        entry.lemma.head.prefix,
+        entry.lemma.head.suffix,
         entry.stem.class
     )
 
@@ -63,11 +63,11 @@ end
 
 function make_expandedstem(entry)
 
-    local input = entry.lemma.head
+    local input = entry.lemma.head.key
     local output = ""
 
-    local prefix = entry.affix.prefix
-    local suffix = entry.affix.suffix
+    local prefix = entry.lemma.head.prefix
+    local suffix = entry.lemma.head.suffix
 
     local class = ""
     local stressrule = ""

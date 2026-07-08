@@ -184,8 +184,12 @@ function CONSTRUCTOR.entry(tbl)
         },
 
         lemma = {
-            head = tbl.head or "",
-            head_index = tbl.head_idx or 0,
+            head = {
+                key = tbl.head or "",
+                index = tbl.head_idx or 0,
+                prefix = tbl.prefix or "",
+                suffix = tbl.suffix or "",
+            },
         },
 
         stem = {
@@ -193,7 +197,7 @@ function CONSTRUCTOR.entry(tbl)
             intermediate  = tbl.intermediate,
         },
 
-        affix = {
+        affix = {-- TODO replace everywhere and delete
             prefix = tbl.prefix,
             suffix = tbl.suffix,
         },
@@ -202,7 +206,7 @@ function CONSTRUCTOR.entry(tbl)
             status = tbl.status or "none",
             warning = tbl.warning,
             attention = tbl.attention,
-            notes = tbl.note, -- TODO make table
+            note = tbl.note, -- TODO make table
             changelog = changes,
             citations = citations,
         },
@@ -253,11 +257,15 @@ function CONSTRUCTOR.compound(tbl)
         modifier = {
             form  = tbl.modifier,
             index = tbl.modifier_idx or 0,
+            prefix = tbl.modifier_pfx or "",
+            suffix = tbl.modifier_sfx or "",
         },
 
         head = {
             form  = tbl.head,
             index = tbl.head_idx or 0,
+            prefix = tbl.head_pfx or "",
+            suffix = tbl.head_sfx or "",
         },
 
         comment = tbl.comment or "",

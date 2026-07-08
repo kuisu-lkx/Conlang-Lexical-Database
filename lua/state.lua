@@ -16,7 +16,7 @@ S.compounds = {}
 S.options = {
     status = false,
     translation = false,
-    notes = false,
+    note = false,
     morphology = false,
     abbreviated = true,
     color = false,
@@ -24,6 +24,7 @@ S.options = {
     changelog = false,
     citations = false,
     paradigm_ipa = false,
+    screen_frame = true,
 }
 
 S.file_patterns = {

@@ -6,6 +6,9 @@ return{
         class        = "n",
         intermediate = ".he.ka",
         comment      = "",
+        warning = "warning",
+        attention = "attention",
+        note = "note",
         class{
             type = "n",
             group{

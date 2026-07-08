@@ -156,8 +156,11 @@ function COMPOUND.make_compound(compound)
 
     entry.lemma.head = head.lemma.head
     entry.lemma.head_index = head.lemma.head_index
-    entry.lemma.modifier = modifier.lemma.head
-    entry.lemma.modifier_index = modifier.lemma.head_index
+    entry.lemma.modifier = {}
+    entry.lemma.modifier.key = modifier.lemma.head.key
+    entry.lemma.modifier.index = modifier.lemma.head.index
+    entry.lemma.modifier.prefix = modifier.lemma.head.prefix
+    entry.lemma.modifier.suffix = modifier.lemma.head.suffix
     entry.source = compound.source
 
     ----------------------------------------------------------------------------

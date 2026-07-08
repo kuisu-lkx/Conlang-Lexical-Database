@@ -86,39 +86,27 @@ end
 --==============================================================================
 
 --parse command
-local argv, options = PARSER.parse_options()
-S.options = options
+local argv = PARSER.parse_options()
 local cmd = argv[1]
 
 -- menu
 if cmd == "print" then
-    listVIEW.print_entry(argv[2])
+    --listVIEW.print_entry(argv[2])
 
-elseif cmd == "print_list" then
+elseif cmd == "list" then
 
-    for i = 2, #argv do
-        listVIEW.print_entry(argv[i])
-    end
+    listVIEW.print_screen(argv)
 
-    print("") --newline
-
-elseif cmd == "print_all" then
-
-    for _, entry in ipairs(S.entries) do
-        listVIEW.print_entry(entry)
-    end
-
-    print("") --newline
-
-elseif cmd == "print_full" then
-    fullVIEW.print_entry(argv[2], options)
+elseif cmd == "show" then
+    fullVIEW.print_screen(argv[2])
 
 elseif cmd == "find" then
     CLI.find_by_key(argv[2], argv[3])
 
 elseif cmd == "translate" then
     --print_translations(argv[2])
-
+else
+    error("Unknown command: " .. cmd)
 end
 
 --##############################################################################

@@ -77,7 +77,7 @@ function PARSER.parse_options()
                 options.translation = true
 
             elseif a == "--note" then
-                options.notes = true
+                options.note = true
 
             elseif a == "--morphology" then
                 options.morphology = true
@@ -100,6 +100,9 @@ function PARSER.parse_options()
             elseif a == "--paradigm_ipa" then
                 options.paradigm_ipa = true
 
+            elseif a == "--no_frame" then
+                options.screen_frame = false
+
             else
                 error("Unknown option: " .. a)
 
@@ -118,7 +121,7 @@ function PARSER.parse_options()
                     options.translation = true
 
                 elseif flag == "n" then
-                    options.notes = true
+                    options.note = true
 
                 elseif flag == "m" then
                     options.morphology = true
@@ -146,7 +149,7 @@ function PARSER.parse_options()
 
     end
 
-    return positional, options
+    return positional
 
 end
 

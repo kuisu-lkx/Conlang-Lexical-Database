@@ -19,10 +19,10 @@ local VERB = {}
 
 function VERB.make_entry(entry)
 
-    local input = entry.lemma.head
+    local input = entry.lemma.head.key
 
-    local prefix = entry.affix.prefix
-    local suffix = entry.affix.suffix
+    local prefix = entry.lemma.head.prefix
+    local suffix = entry.lemma.head.suffix
 
     local class = ""
     local stressrule = ""
@@ -38,7 +38,7 @@ function VERB.make_entry(entry)
     -- Determine stressrule
     ----------------------------------------------------------------------------
 
-    local t = TOKEN.tokenize(entry.lemma.head)
+    local t = TOKEN.tokenize(input)
 
     -- determine if verb is derived from stemmclass n5 nominal
     if #t >= 4 then
