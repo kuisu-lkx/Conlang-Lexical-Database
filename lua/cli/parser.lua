@@ -1,6 +1,7 @@
 local S = require("state")
 local U = require("util")
 
+
 --##############################################################################
 -- SUBSCRIPT: Simple argument parser
 --##############################################################################
@@ -50,15 +51,30 @@ local function normalize_arg(str)
 
 end
 
-for i = 1, #arg do
+local function normalize_argv(argv)
 
-    arg[i] = normalize_arg(arg[i])
+    for i = 1, #argv do
+        argv[i] = normalize_arg(argv[i])
+    end
 
+    return argv
 end
 
 --++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 -- FUNCTION: Parse command line options
 --++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+function PARSER.parse_string(input)
+
+    local out = {}
+
+    for word in input:gmatch("%S+") do
+        table.insert(out, word)
+    end
+
+    return normalize_argv(out)
+
+end
 
 function PARSER.parse_options()
 
@@ -149,7 +165,7 @@ function PARSER.parse_options()
 
     end
 
-    return positional
+    return normalize_argv(positional)
 
 end
 

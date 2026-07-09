@@ -2,8 +2,9 @@ local S = require("state")
 local U = require("util")
 local E = require("entry.entry")
 local PARSER = require("cli.parser")
-local listVIEW = require("cli.view.list")
-local fullVIEW = require("cli.view.full")
+--local listVIEW = require("cli.view.list")
+--local fullVIEW = require("cli.view.full")
+local COMMAND = require("cli.command")
 
 --##############################################################################
 -- SUBSCRIPT: Command line interface
@@ -50,64 +51,60 @@ U.sort_by_order(
 -- SECTION: TODO: Functions to move
 --==============================================================================
 
---++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
--- FUNCTION: TODO
--- FIND BY KEY - TODO move to util?
---------------
 
--- Example:
+function CLI.shell()
 
---     find_by_key(
-    --         "contractedstem",
---         "eak"
---     )
---------
+    print("Hello :3")
 
--- Returns matching entries and prints their
--- citations.
---++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    while true do
 
-function CLI.find_by_key(key, value)
+        io.write("lkx> ")
 
-    local matches = U.search_entries(key, value)
+        local input = io.read()
 
-    print(#matches .. " match(es)")
+        if not input then
+            break
+        end
 
-    for _, entry in ipairs(matches) do
-        print(entry.stem.contracted.form)
+        if input == "" then
+            goto continue
+        end
+
+        local argv = PARSER.parse_string(input)
+
+        if argv[1] == "exit" then
+            break
+        end
+
+        local ok, err = pcall(function()
+            COMMAND.execute(argv)
+        end)
+
+        if not ok then
+            print(err)
+        end
+
+        ::continue::
+
     end
 
-    return matches
-
 end
 
---==============================================================================
--- SECTION: Interface commands
---==============================================================================
 
---parse command
+
+
+
+
+
+
 local argv = PARSER.parse_options()
-local cmd = argv[1]
 
--- menu
---if cmd == "print" then
-    --listVIEW.print_entry(argv[2])
-
-if cmd == "list" then
-
-    listVIEW.print_screen(argv)
-
-elseif cmd == "show" then
-    fullVIEW.print_screen(argv[2])
-
-elseif cmd == "find" then
-    CLI.find_by_key(argv[2], argv[3])
-
---elseif cmd == "translate" then
-    --print_translations(argv[2])
+if #argv == 0 then
+    CLI.shell()
 else
-    error("Unknown command: " .. cmd)
+    COMMAND.execute(argv)
 end
+
 
 --##############################################################################
 -- RETURN
