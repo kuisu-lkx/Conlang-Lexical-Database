@@ -4,7 +4,7 @@ local ANSI = require("cli.ansi")
 local LAYOUT = require("cli.layout")
 local TABLE = require("cli.table")
 local BLOCK = require("cli.block")
-
+local QUERY = require("cli.query")
 --##############################################################################
 -- SUBSCRIPT: CLI screen formatter for list view
 -- TODO comment functions
@@ -232,23 +232,35 @@ function listVIEW.print_screen(argv)
 
     local entry
 
-    if argv[2] == ":all" then
+    for i = 2, #argv do
 
-        for _, entry in ipairs(S.entries) do
-            table.insert(screen_children, entry_section(entry))
-        end
+        local query = argv[i]
 
-    else
+        ------------------------------------------------
+        -- Query object
+        ------------------------------------------------
 
-        for i = 2, #argv do
+        if query.key then
 
-            if type(argv[i]) == "table" then
-                entry = arg
-            else
-                entry = U.find_stem(argv[i])
+            local matches = QUERY.search_entries(query)
+
+            for _, entry in ipairs(matches) do
+                table.insert(
+                    screen_children,
+                    entry_section(entry)
+                )
             end
 
-            table.insert(screen_children, entry_section(entry))
+        ------------------------------------------------
+        -- Direct entry object
+        ------------------------------------------------
+
+        elseif type(query) == "table" then
+
+            table.insert(
+                screen_children,
+                entry_section(query)
+            )
 
         end
 

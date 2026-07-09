@@ -283,6 +283,8 @@ end
 
 local extract = {
 
+    lemma = {},
+
     stem = {},
 
     affix = {},
@@ -290,6 +292,10 @@ local extract = {
     source = {},
 
 }
+
+extract.lemma.head = function(entry)
+    return entry.lemma.head.key
+    end
 
 extract.stem.form = function(entry)
     return entry.stem.contracted.form
@@ -300,11 +306,11 @@ extract.stem.class = function(entry)
     end
 
 extract.affix.prefix = function(entry)
-    return entry.affix.prefix
+    return lemma.head.prefix
     end
 
 extract.affix.suffix = function(entry)
-    return entry.affix.suffix
+    return lemma.head.suffix
     end
 
 extract.source.filename = function(entry)
@@ -313,6 +319,7 @@ extract.source.filename = function(entry)
 
 -- Input abbreviations for search_entries()
 local extractors = {
+    lemma = extract.lemma.head,
     stem = extract.stem.form,
     class = extract.stem.class,
     prefix = extract.affix.prefix,

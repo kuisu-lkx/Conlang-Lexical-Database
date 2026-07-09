@@ -5,6 +5,8 @@ local U = require("util")
 local listVIEW = require("cli.view.list")
 local fullVIEW = require("cli.view.full")
 
+
+
 --##############################################################################
 -- SUBSCRIPT: CLI commands
 --##############################################################################
@@ -53,10 +55,10 @@ function COMMAND.execute(argv)
         listVIEW.print_screen(argv)
 
     elseif cmd == "show" then
-        fullVIEW.print_screen(argv[2])
+        fullVIEW.print_screen(argv[2].value)
 
     elseif cmd == "find" then
-        COMMAND.find_by_key(argv[2], argv[3])
+        COMMAND.find_by_key(argv[2].value, argv[3].value)
 
     --elseif cmd == "translate" then
         --print_translations(argv[2])

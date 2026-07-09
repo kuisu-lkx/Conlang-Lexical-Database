@@ -5,7 +5,7 @@ local LAYOUT = require("cli.layout")
 local TABLE = require("cli.table")
 local BLOCK = require("cli.block")
 local unicode = require("unicode")
-
+local QUERY = require("cli.query")
 --##############################################################################
 -- SUBSCRIPT: CLI screen formatter for full view
 -- TODO comment functions
@@ -534,7 +534,8 @@ function fullVIEW.print_screen(arg)
     if type(arg) == "table" then
         entry = arg
     else
-        entry = U.find_stem(arg) -- TODO find lemma? pfx/sfx?
+        local matches = QUERY.search_entries(arg)
+        entry = matches[1]
     end
 
     ----------------------------------------------------------------------------

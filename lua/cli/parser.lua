@@ -60,21 +60,94 @@ local function normalize_argv(argv)
     return argv
 end
 
---++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
--- FUNCTION: Parse command line options
---++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+
+
+--------------------------------------------------------------------------------
+-- LOCAL FUNCTION: Split query token into key and value
+--------------------------------------------------------------------------------
+
+--------------------------------------------------------------------------------
+-- LOCAL FUNCTION: Split query token
+--------------------------------------------------------------------------------
+
+local function split_key_value(token)
+
+    ------------------------------------------------
+    -- Negation
+    ------------------------------------------------
+
+    local negated = false
+
+    if token:sub(1,1) == "-" then
+        negated = true
+        token = token:sub(2)
+    end
+
+    ------------------------------------------------
+    -- Explicit namespace
+    ------------------------------------------------
+
+    local key, value = token:match("^([^=]+)=(.*)$")
+
+    if key then
+
+        return {
+            type = "predicate",
+            key = key,
+            value = normalize_arg(value),
+            negated = negated,
+        }
+
+    end
+
+    ------------------------------------------------
+    -- Default namespace
+    ------------------------------------------------
+
+    return {
+        type = "predicate",
+        key = "lemma",
+        value = normalize_arg(token),
+        negated = negated,
+    }
+
+end
+
+
+
 
 function PARSER.parse_string(input)
 
-    local out = {}
+    local words = {}
 
     for word in input:gmatch("%S+") do
-        table.insert(out, word)
+        table.insert(words, word)
     end
 
-    return normalize_argv(out)
+    local out = {}
+
+    ------------------------------------------------
+    -- Command
+    ------------------------------------------------
+
+    out[1] = words[1]
+
+    ------------------------------------------------
+    -- Arguments
+    ------------------------------------------------
+
+    for i = 2, #words do
+        out[i] = split_key_value(words[i])
+    end
+
+    return out
 
 end
+
+--++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+-- FUNCTION: Parse command line options
+--++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 function PARSER.parse_options()
 
