@@ -5,6 +5,7 @@ local PARSER = require("cli.parser")
 --local listVIEW = require("cli.view.list")
 --local fullVIEW = require("cli.view.full")
 local COMMAND = require("cli.command")
+local linenoise = require("linenoise")
 
 --##############################################################################
 -- SUBSCRIPT: Command line interface
@@ -58,9 +59,7 @@ function CLI.shell()
 
     while true do
 
-        io.write("lkx> ")
-
-        local input = io.read()
+        local input = linenoise.linenoise("lkx> ")
 
         if not input then
             break
@@ -68,6 +67,8 @@ function CLI.shell()
 
         if input == "" then
             goto continue
+        else
+            linenoise.historyadd(input)
         end
 
         local argv = PARSER.parse_string(input)
