@@ -236,32 +236,13 @@ function listVIEW.print_screen(argv)
 
         local query = argv[i]
 
-        ------------------------------------------------
-        -- Query object
-        ------------------------------------------------
+        local matches = QUERY.search_entries(query)
 
-        if query.key then
-
-            local matches = QUERY.search_entries(query)
-
-            for _, entry in ipairs(matches) do
-                table.insert(
-                    screen_children,
-                    entry_section(entry)
-                )
-            end
-
-        ------------------------------------------------
-        -- Direct entry object
-        ------------------------------------------------
-
-        elseif type(query) == "table" then
-
+        for _, entry in ipairs(matches) do
             table.insert(
                 screen_children,
-                entry_section(query)
+                entry_section(entry)
             )
-
         end
 
     end

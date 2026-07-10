@@ -103,6 +103,46 @@ end
 
 function QUERY.evaluate_query(query, entry)
 
+    ------------------------------------------------
+    -- AND node
+    ------------------------------------------------
+
+    if query.type == "and" then
+
+        for _, child in ipairs(query.children) do
+
+            if not QUERY.evaluate_query(child, entry) then
+                return false
+            end
+
+        end
+
+        return true
+
+    end
+
+    ------------------------------------------------
+    -- OR node
+    ------------------------------------------------
+
+    if query.type == "or" then
+
+        for _, child in ipairs(query.children) do
+
+            if QUERY.evaluate_query(child, entry) then
+                return true
+            end
+
+        end
+
+        return false
+
+    end
+
+    ------------------------------------------------
+    -- Predicate node
+    ------------------------------------------------
+
     local extractor =
         extractors[query.key]
 
@@ -112,23 +152,14 @@ function QUERY.evaluate_query(query, entry)
     local field =
         extractor(entry)
 
-    ------------------------------------------------
-    -- Missing field
-    ------------------------------------------------
-
     local result = false
 
     if field ~= nil then
 
-        result = matcher(
-            tostring(field)
-        )
+        result =
+            matcher(tostring(field))
 
     end
-
-    ------------------------------------------------
-    -- Negation
-    ------------------------------------------------
 
     if query.negated then
         result = not result
