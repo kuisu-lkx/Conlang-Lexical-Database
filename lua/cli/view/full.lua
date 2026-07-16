@@ -179,7 +179,7 @@ local function lemma_section(entry)
                     text =
                     ANSI.dim(string.rep("─", 6))
                     .. ANSI.bold_dim(" LEMMA ")
-                    .. ANSI.dim(string.rep("─", 64)),
+                    .. ANSI.dim(string.rep("─", 63)),
                     align = "left"},
                     lemma_info_hstack
             }
@@ -527,16 +527,30 @@ end
 -- FUNCTION: Assemble screen from sections and print
 --++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-function fullVIEW.print_screen(arg)
+function fullVIEW.print_screen(argv)
 
-    local entry
+    local query = argv[2]
 
-    if type(arg) == "table" then
-        entry = arg
-    else
-        local matches = QUERY.search_entries(arg)
-        entry = matches[1]
+    local matches = QUERY.search_entries(query)
+
+    if #matches > 1 then
+
+        print(ANSI.bold_red("WARNING: ") .. ANSI.bold("Multiple matches found!"))
+
+        for i = 1, #matches do
+            print(
+                ANSI.bold(i)
+                .. ": "
+                .. U.assemble_stem(matches[i].stem.contracted.format.unicode)
+            )
+        end
+
+        print("Showing match " .. ANSI.bold("1") .. ":")
+
     end
+
+
+    local entry = matches[1]
 
     ----------------------------------------------------------------------------
     -- Select sections to display

@@ -33,7 +33,7 @@ local COMMAND = {}
 
 function COMMAND.find_by_key(key, value)
 
-    local matches = U.search_entries(key, value)
+    local matches = U.search_entries(key, value)--TODO replace with query search!
 
     print(#matches .. " match(es)")
 
@@ -55,7 +55,7 @@ function COMMAND.execute(argv)
         listVIEW.print_screen(argv)
 
     elseif cmd == "show" then
-        fullVIEW.print_screen(argv[2].value)
+        fullVIEW.print_screen(argv)
 
     elseif cmd == "find" then
         COMMAND.find_by_key(argv[2].value, argv[3].value)

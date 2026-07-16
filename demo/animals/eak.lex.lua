@@ -23,7 +23,7 @@ return{
             },
             group{
                 info = "",
-                translation{text = "knight", index = {}, after = "(chess, informal)" },
+                translation{text = "knight", index = {}, after = "(chess)" },
             },
             group{
                 info = "gc.",
