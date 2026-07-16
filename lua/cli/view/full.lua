@@ -6,6 +6,7 @@ local TABLE = require("cli.table")
 local BLOCK = require("cli.block")
 local unicode = require("unicode")
 local QUERY = require("cli.query")
+local linenoise = require("linenoise")
 --##############################################################################
 -- SUBSCRIPT: CLI screen formatter for full view
 -- TODO comment functions
@@ -529,13 +530,20 @@ end
 
 function fullVIEW.print_screen(argv)
 
-    local query = argv[2]
+    local entry = {}
+    local matches = {}
 
-    local matches = QUERY.search_entries(query)
+    for i = 2, #argv do
+
+        local query = argv[i]
+
+        matches = QUERY.search_entries(query)
+
+    end
 
     if #matches > 1 then
 
-        print(ANSI.bold_red("WARNING: ") .. ANSI.bold("Multiple matches found!"))
+        print(ANSI.bold("Multiple matches found:"))
 
         for i = 1, #matches do
             print(
@@ -545,12 +553,36 @@ function fullVIEW.print_screen(argv)
             )
         end
 
-        print("Showing match " .. ANSI.bold("1") .. ":")
+        print("Type number to choose match:")
+
+        ::continue::
+
+        local input = linenoise.linenoise("query> ")
+
+        if input == "" then
+            goto continue
+        end
+
+        input = tonumber(input)
+
+        if not input
+        or input > #matches then
+
+            print("Invalid input!")
+            goto continue
+
+        end
+
+        entry = matches[tonumber(input)]
+
+    else
+
+        entry = matches[1]
 
     end
 
 
-    local entry = matches[1]
+
 
     ----------------------------------------------------------------------------
     -- Select sections to display

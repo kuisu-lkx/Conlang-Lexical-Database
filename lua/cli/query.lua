@@ -48,11 +48,15 @@ extract.stem.class = function(entry)
     end
 
 extract.affix.prefix = function(entry)
-    return entry.lemma.head.prefix
+    if entry.lemma.head.prefix ~= "" then
+        return entry.lemma.head.prefix
+    end
     end
 
 extract.affix.suffix = function(entry)
-    return entry.lemma.head.suffix
+    if entry.lemma.head.suffix ~= "" then
+        return entry.lemma.head.suffix
+    end
     end
 
 extract.source.filename = function(entry)
@@ -66,7 +70,7 @@ local extractors = {
     stem = extract.stem.form,
     class = extract.stem.class,
     prefix = extract.affix.prefix,
-    postfix = extract.affix.suffix,
+    suffix = extract.affix.suffix,
     filename = extract.source.filename,
 }
 
